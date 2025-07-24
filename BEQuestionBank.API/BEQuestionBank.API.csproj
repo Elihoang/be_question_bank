@@ -16,4 +16,8 @@
       <Folder Include="Middlewares\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\BEQuestionBank.Core\BEQuestionBank.Core.csproj" />
+    </ItemGroup>
+
 </Project>

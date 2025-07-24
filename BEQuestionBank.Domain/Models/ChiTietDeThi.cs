@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace BEQuestionBank.Domain.Models;
 
 public class ChiTietDeThi
 {
+    [Key]
     public Guid MaDeThi { get; set; }
     public Guid MaPhan { get; set; }
     public Guid MaCauHoi { get; set; }

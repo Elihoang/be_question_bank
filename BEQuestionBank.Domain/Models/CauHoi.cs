@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using BEQuestionBank.Domain.Common;
 
 namespace BEQuestionBank.Domain.Models;
 
 public class CauHoi : ModelBase
 {
+    [Key]
     public Guid MaCauHoi { get; set; }
     public Guid MaPhan { get; set; }
     public int MaSoCauHoi { get; set; }

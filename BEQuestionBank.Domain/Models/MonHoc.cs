@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
 using BEQuestionBank.Domain.Common;
 
 namespace BEQuestionBank.Domain.Models;
 
 public class MonHoc : ModelBase
 {
+    [Key]
     public Guid MaMonHoc { get; set; }
     public string TenMonHoc { get; set; } = string.Empty;
     public string MaSoMonHoc { get; set; } = string.Empty;

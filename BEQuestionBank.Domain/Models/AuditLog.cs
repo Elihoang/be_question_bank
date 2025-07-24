@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace BEQuestionBank.Domain.Models;
 
 public class AuditLog
 {
+    [Key]
     public long MaNhatKy { get; set; }
     public string TenBang { get; set; } = string.Empty;
     public string MaBanGhi { get; set; } = string.Empty;

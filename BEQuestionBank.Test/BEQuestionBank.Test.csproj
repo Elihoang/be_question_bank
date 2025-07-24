@@ -22,4 +22,11 @@
       <Folder Include="Fakes\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\BEQuestionBank.API\BEQuestionBank.API.csproj" />
+      <ProjectReference Include="..\BEQuestionBank.Core\BEQuestionBank.Core.csproj" />
+      <ProjectReference Include="..\BEQuestionBank.Domain\BEQuestionBank.Domain.csproj" />
+      <ProjectReference Include="..\BEQuestionBank.Shared\BEQuestionBank.Shared.csproj" />
+    </ItemGroup>
+
 </Project>
