@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace BEQuestionBank.Domain.Models;
 
 public class GiangVienMonHoc
 {
+    [Key]
     public Guid MaNguoiDung { get; set; }
     public Guid MaMonHoc { get; set; }
     public DateTime? TuNgay { get; set; }

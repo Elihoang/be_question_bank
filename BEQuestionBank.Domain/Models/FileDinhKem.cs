@@ -1,7 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace BEQuestionBank.Domain.Models;
 
 public class FileDinhKem
 {
+    [Key]
     public Guid MaFile { get; set; }
     public Guid? MaCauHoi { get; set; }
     public Guid? MaCauTraLoi { get; set; }

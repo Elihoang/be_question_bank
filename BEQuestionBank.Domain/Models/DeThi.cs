@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using BEQuestionBank.Domain.Common;
 
 namespace BEQuestionBank.Domain.Models;
@@ -5,6 +6,7 @@ namespace BEQuestionBank.Domain.Models;
 
 public class DeThi : ModelBase
 {
+    [Key]
     public Guid MaDeThi { get; set; }
     public Guid MaMonHoc { get; set; }
     public string TenDeThi { get; set; } = string.Empty;
