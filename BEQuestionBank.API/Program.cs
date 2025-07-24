@@ -1,24 +1,31 @@
 using BEQuestionBank.Core.Configurations;
 using Microsoft.EntityFrameworkCore;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddControllers(); // ✅ Cần có để Swagger hiển thị API
+builder.Services.AddEndpointsApiExplorer(); // ✅ Cho minimal APIs
+builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
+
+// Add DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger(); // ✅ Bắt buộc
+    app.UseSwaggerUI(); // ✅ Bắt buộc
 }
 
 app.UseHttpsRedirection();
 
-// Add DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+app.UseAuthorization();
+
+app.MapControllers(); 
 
 app.Run();
