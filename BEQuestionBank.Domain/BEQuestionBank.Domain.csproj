@@ -8,9 +8,11 @@
 
     <ItemGroup>
       <Folder Include="BusinessRules\" />
-      <Folder Include="Interfaces\Repo\" />
-      <Folder Include="Interfaces\Service\" />
       <Folder Include="Models\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\BEQuestionBank.Shared\BEQuestionBank.Shared.csproj" />
     </ItemGroup>
 
 </Project>

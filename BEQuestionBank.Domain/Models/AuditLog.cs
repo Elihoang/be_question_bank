@@ -18,5 +18,5 @@ public class AuditLog
     public string? UserAgent { get; set; }
     public string? GhiChu { get; set; }
 
-    public NguoiDung? NguoiDung { get; set; }
+    public virtual NguoiDung? NguoiDung { get; set; }
 }

@@ -9,9 +9,11 @@
     <ItemGroup>
       <Folder Include="Constants\" />
       <Folder Include="Extensions\" />
-      <Folder Include="Helpers\" />
-      <Folder Include="Logging\" />
       <Folder Include="Results\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Nanoid" Version="3.1.0" />
     </ItemGroup>
 
 </Project>

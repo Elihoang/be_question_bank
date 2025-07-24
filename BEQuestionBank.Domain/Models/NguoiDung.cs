@@ -14,9 +14,9 @@ public class NguoiDung : ModelBase
     public string? Email { get; set; }
     public VaiTroNguoiDung VaiTro { get; set; }
     public bool BiKhoa { get; set; } = false;
-    public Guid? MaKhoa { get; set; }
+    public String? MaKhoa { get; set; }
 
-    public Khoa? Khoa { get; set; }
+    public virtual Khoa? Khoa { get; set; }
     public ICollection<GiangVienMonHoc> GiangVienMonHocs { get; set; }
     public ICollection<CauHoi> CauHois { get; set; }
 }

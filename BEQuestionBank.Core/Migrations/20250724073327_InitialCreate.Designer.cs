@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BEQuestionBank.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250724045639_InitialCreate")]
+    [Migration("20250724073327_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -81,15 +81,14 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.CauHoi", b =>
                 {
-                    b.Property<Guid>("MaCauHoi")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauHoi")
+                        .HasColumnType("text");
 
                     b.Property<short>("CapDo")
                         .HasColumnType("smallint");
 
-                    b.Property<Guid?>("CauHoiChaMaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CauHoiChaMaCauHoi")
+                        .HasColumnType("text");
 
                     b.Property<float?>("DoPhanCach")
                         .HasColumnType("real");
@@ -100,11 +99,12 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<bool>("LaCauHoiNhom")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("MaCauHoiCha")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauHoiCha")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MaPhan")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaPhan")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("MaSoCauHoi")
                         .HasColumnType("integer");
@@ -127,8 +127,9 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<string>("NoiDung")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("PhanMaPhan")
-                        .HasColumnType("uuid");
+                    b.Property<string>("PhanMaPhan")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("SoLanDung")
                         .HasColumnType("integer");
@@ -155,18 +156,18 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.CauTraLoi", b =>
                 {
-                    b.Property<Guid>("MaCauTraLoi")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauTraLoi")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("CauHoiMaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CauHoiMaCauHoi")
+                        .HasColumnType("text");
 
                     b.Property<bool>("LaDapAn")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("MaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauHoi")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("NoiDung")
                         .HasColumnType("text");
@@ -183,24 +184,27 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.ChiTietDeThi", b =>
                 {
-                    b.Property<Guid>("MaDeThi")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaDeThi")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("CauHoiMaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CauHoiMaCauHoi")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("DeThiMaDeThi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DeThiMaDeThi")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauHoi")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MaPhan")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaPhan")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("PhanMaPhan")
-                        .HasColumnType("uuid");
+                    b.Property<string>("PhanMaPhan")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int?>("ThuTu")
                         .HasColumnType("integer");
@@ -218,18 +222,19 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.DeThi", b =>
                 {
-                    b.Property<Guid>("MaDeThi")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaDeThi")
+                        .HasColumnType("text");
 
                     b.Property<bool>("DaDuyet")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("MaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaMonHoc")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MonHocMaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MonHocMaMonHoc")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("NgayCapNhap")
                         .HasColumnType("timestamp with time zone");
@@ -256,15 +261,14 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.FileDinhKem", b =>
                 {
-                    b.Property<Guid>("MaFile")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaFile")
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("CauHoiMaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CauHoiMaCauHoi")
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("CauTraLoiMaCauTraLoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("CauTraLoiMaCauTraLoi")
+                        .HasColumnType("text");
 
                     b.Property<string>("DuongDan")
                         .HasColumnType("text");
@@ -272,11 +276,11 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<int?>("LoaiFile")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("MaCauHoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauHoi")
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("MaCauTraLoi")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaCauTraLoi")
+                        .HasColumnType("text");
 
                     b.Property<string>("TenFile")
                         .HasColumnType("text");
@@ -302,11 +306,13 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<string>("GhiChu")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("MaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaMonHoc")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MonHocMaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MonHocMaMonHoc")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("NguoiDungMaNguoiDung")
                         .HasColumnType("uuid");
@@ -325,9 +331,8 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.Khoa", b =>
                 {
-                    b.Property<Guid>("MaKhoa")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaKhoa")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("NgayCapNhap")
                         .HasColumnType("timestamp with time zone");
@@ -349,15 +354,15 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.MonHoc", b =>
                 {
-                    b.Property<Guid>("MaMonHoc")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaMonHoc")
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("KhoaMaKhoa")
-                        .HasColumnType("uuid");
+                    b.Property<string>("KhoaMaKhoa")
+                        .HasColumnType("text");
 
-                    b.Property<Guid>("MaKhoa")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaKhoa")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("MaSoMonHoc")
                         .IsRequired()
@@ -368,6 +373,9 @@ namespace BEQuestionBank.Core.Migrations
 
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SoTinChi")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TenMonHoc")
                         .IsRequired()
@@ -399,11 +407,11 @@ namespace BEQuestionBank.Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("KhoaMaKhoa")
-                        .HasColumnType("uuid");
+                    b.Property<string>("KhoaMaKhoa")
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("MaKhoa")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaKhoa")
+                        .HasColumnType("text");
 
                     b.Property<string>("MatKhau")
                         .IsRequired()
@@ -434,18 +442,18 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.Phan", b =>
                 {
-                    b.Property<Guid>("MaPhan")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaPhan")
+                        .HasColumnType("text");
 
                     b.Property<bool>("LaCauHoiNhom")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("MaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MaMonHoc")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<Guid?>("MonHocMaMonHoc")
-                        .HasColumnType("uuid");
+                    b.Property<string>("MonHocMaMonHoc")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("NgayCapNhap")
                         .HasColumnType("timestamp with time zone");
@@ -509,9 +517,7 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     b.HasOne("BEQuestionBank.Domain.Models.CauHoi", "CauHoi")
                         .WithMany("CauTraLois")
-                        .HasForeignKey("CauHoiMaCauHoi")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CauHoiMaCauHoi");
 
                     b.Navigation("CauHoi");
                 });
@@ -520,9 +526,7 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     b.HasOne("BEQuestionBank.Domain.Models.CauHoi", "CauHoi")
                         .WithMany()
-                        .HasForeignKey("CauHoiMaCauHoi")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CauHoiMaCauHoi");
 
                     b.HasOne("BEQuestionBank.Domain.Models.DeThi", "DeThi")
                         .WithMany("ChiTietDeThis")

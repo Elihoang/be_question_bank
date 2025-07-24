@@ -10,13 +10,12 @@
       <Folder Include="Features\" />
       <Folder Include="Identity\" />
       <Folder Include="Mapping\" />
-      <Folder Include="Repositories\" />
-      <Folder Include="Services\" />
       <Folder Include="Validation\" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\BEQuestionBank.Domain\BEQuestionBank.Domain.csproj" />
+      <ProjectReference Include="..\BEQuestionBank.Shared\BEQuestionBank.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
