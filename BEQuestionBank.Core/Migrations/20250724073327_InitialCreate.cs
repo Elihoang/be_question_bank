@@ -16,7 +16,7 @@ namespace BEQuestionBank.Core.Migrations
                 name: "Khoas",
                 columns: table => new
                 {
-                    MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaKhoa = table.Column<string>(type: "text", nullable: false),
                     TenKhoa = table.Column<string>(type: "text", nullable: false),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -31,11 +31,12 @@ namespace BEQuestionBank.Core.Migrations
                 name: "MonHocs",
                 columns: table => new
                 {
-                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
                     TenMonHoc = table.Column<string>(type: "text", nullable: false),
                     MaSoMonHoc = table.Column<string>(type: "text", nullable: false),
-                    MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
-                    KhoaMaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
+                    SoTinChi = table.Column<int>(type: "integer", nullable: false),
+                    MaKhoa = table.Column<string>(type: "text", nullable: false),
+                    KhoaMaKhoa = table.Column<string>(type: "text", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     XoaTam = table.Column<bool>(type: "boolean", nullable: false)
@@ -61,8 +62,8 @@ namespace BEQuestionBank.Core.Migrations
                     Email = table.Column<string>(type: "text", nullable: true),
                     VaiTro = table.Column<int>(type: "integer", nullable: false),
                     BiKhoa = table.Column<bool>(type: "boolean", nullable: false),
-                    MaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
-                    KhoaMaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
+                    MaKhoa = table.Column<string>(type: "text", nullable: true),
+                    KhoaMaKhoa = table.Column<string>(type: "text", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     XoaTam = table.Column<bool>(type: "boolean", nullable: false)
@@ -81,12 +82,12 @@ namespace BEQuestionBank.Core.Migrations
                 name: "DeThis",
                 columns: table => new
                 {
-                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaDeThi = table.Column<string>(type: "text", nullable: false),
+                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
                     TenDeThi = table.Column<string>(type: "text", nullable: false),
                     DaDuyet = table.Column<bool>(type: "boolean", nullable: false),
                     SoCauHoi = table.Column<int>(type: "integer", nullable: true),
-                    MonHocMaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: false),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     XoaTam = table.Column<bool>(type: "boolean", nullable: false)
@@ -106,13 +107,13 @@ namespace BEQuestionBank.Core.Migrations
                 name: "Phans",
                 columns: table => new
                 {
-                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaPhan = table.Column<string>(type: "text", nullable: false),
+                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
                     TenPhan = table.Column<string>(type: "text", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     ThuTu = table.Column<int>(type: "integer", nullable: false),
                     LaCauHoiNhom = table.Column<bool>(type: "boolean", nullable: false),
-                    MonHocMaMonHoc = table.Column<Guid>(type: "uuid", nullable: true),
+                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     XoaTam = table.Column<bool>(type: "boolean", nullable: false)
@@ -161,12 +162,12 @@ namespace BEQuestionBank.Core.Migrations
                 columns: table => new
                 {
                     MaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
                     TuNgay = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DenNgay = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     GhiChu = table.Column<string>(type: "text", nullable: true),
                     NguoiDungMaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
-                    MonHocMaMonHoc = table.Column<Guid>(type: "uuid", nullable: false)
+                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -189,22 +190,22 @@ namespace BEQuestionBank.Core.Migrations
                 name: "CauHois",
                 columns: table => new
                 {
-                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
+                    MaPhan = table.Column<string>(type: "text", nullable: false),
                     MaSoCauHoi = table.Column<int>(type: "integer", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     HoanVi = table.Column<bool>(type: "boolean", nullable: false),
                     CapDo = table.Column<short>(type: "smallint", nullable: false),
                     LaCauHoiNhom = table.Column<bool>(type: "boolean", nullable: false),
-                    MaCauHoiCha = table.Column<Guid>(type: "uuid", nullable: true),
+                    MaCauHoiCha = table.Column<string>(type: "text", nullable: true),
                     TrangThai = table.Column<bool>(type: "boolean", nullable: false),
                     SoLanDuocThi = table.Column<int>(type: "integer", nullable: false),
                     SoLanDung = table.Column<int>(type: "integer", nullable: false),
                     DoPhanCach = table.Column<float>(type: "real", nullable: true),
                     NgaySua = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     NguoiTao = table.Column<Guid>(type: "uuid", nullable: true),
-                    PhanMaPhan = table.Column<Guid>(type: "uuid", nullable: false),
-                    CauHoiChaMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
+                    PhanMaPhan = table.Column<string>(type: "text", nullable: false),
+                    CauHoiChaMaCauHoi = table.Column<string>(type: "text", nullable: true),
                     NguoiDungMaNguoiDung = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -235,12 +236,12 @@ namespace BEQuestionBank.Core.Migrations
                 name: "CauTraLois",
                 columns: table => new
                 {
-                    MaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauTraLoi = table.Column<string>(type: "text", nullable: false),
+                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     ThuTu = table.Column<int>(type: "integer", nullable: false),
                     LaDapAn = table.Column<bool>(type: "boolean", nullable: false),
-                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: false)
+                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -249,21 +250,20 @@ namespace BEQuestionBank.Core.Migrations
                         name: "FK_CauTraLois_CauHois_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
                         principalTable: "CauHois",
-                        principalColumn: "MaCauHoi",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "MaCauHoi");
                 });
 
             migrationBuilder.CreateTable(
                 name: "ChiTietDeThis",
                 columns: table => new
                 {
-                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaDeThi = table.Column<string>(type: "text", nullable: false),
+                    MaPhan = table.Column<string>(type: "text", nullable: false),
+                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
                     ThuTu = table.Column<int>(type: "integer", nullable: true),
-                    DeThiMaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
-                    PhanMaPhan = table.Column<Guid>(type: "uuid", nullable: false),
-                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: false)
+                    DeThiMaDeThi = table.Column<string>(type: "text", nullable: false),
+                    PhanMaPhan = table.Column<string>(type: "text", nullable: false),
+                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -272,8 +272,7 @@ namespace BEQuestionBank.Core.Migrations
                         name: "FK_ChiTietDeThis_CauHois_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
                         principalTable: "CauHois",
-                        principalColumn: "MaCauHoi",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "MaCauHoi");
                     table.ForeignKey(
                         name: "FK_ChiTietDeThis_DeThis_DeThiMaDeThi",
                         column: x => x.DeThiMaDeThi,
@@ -292,14 +291,14 @@ namespace BEQuestionBank.Core.Migrations
                 name: "FileDinhKems",
                 columns: table => new
                 {
-                    MaFile = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
-                    MaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: true),
+                    MaFile = table.Column<string>(type: "text", nullable: false),
+                    MaCauHoi = table.Column<string>(type: "text", nullable: true),
+                    MaCauTraLoi = table.Column<string>(type: "text", nullable: true),
                     TenFile = table.Column<string>(type: "text", nullable: true),
                     DuongDan = table.Column<string>(type: "text", nullable: true),
                     LoaiFile = table.Column<int>(type: "integer", nullable: true),
-                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
-                    CauTraLoiMaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: true)
+                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true),
+                    CauTraLoiMaCauTraLoi = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

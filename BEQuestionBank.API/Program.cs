@@ -1,6 +1,6 @@
 using BEQuestionBank.Core.Configurations;
 using Microsoft.EntityFrameworkCore;
-
+using BEQuestionBank.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +12,9 @@ builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+
+// Gọi extension từ Core
+builder.Services.AddCoreServices();
 
 var app = builder.Build();
 
