@@ -43,4 +43,9 @@ public class KhoaRepository : GenericRepository<Khoa>, IKhoaRepository
             ? await _context.Khoas.CountAsync() 
             : await _context.Khoas.CountAsync(predicate);
     }
+
+    public async Task<Khoa> GetByTenKhoaAsync(string tenKhoa)
+    {
+        return await _context.Khoas.SingleOrDefaultAsync(k => k.TenKhoa == tenKhoa);
+    }
 }

@@ -13,8 +13,28 @@ builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
 
+// Cấu hình CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // ✅ Đúng port React
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials(); // nếu dùng cookie hoặc auth
+        });
+});
+
+
 // Gọi extension từ Core
 builder.Services.AddCoreServices();
+
+// Bật annotation Swagger
+builder.Services.AddSwaggerGen(c =>
+{
+    c.EnableAnnotations();
+});
 
 var app = builder.Build();
 
@@ -24,6 +44,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger(); // ✅ Bắt buộc
     app.UseSwaggerUI(); // ✅ Bắt buộc
 }
+
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
