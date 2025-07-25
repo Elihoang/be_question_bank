@@ -92,4 +92,9 @@ public class KhoaService : IKhoaService
     {
         return await _repository.CountAsync(predicate);
     }
+
+    public async Task<Khoa> GetByTenKhoaAsync(string tenKhoa)
+    {
+        return await _repository.GetByTenKhoaAsync(tenKhoa);
+    }
 }

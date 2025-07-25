@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using BEQuestionBank.Shared.DTOs.Khoa;
 using BEQuestionBank.Shared.Helpers;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -21,52 +22,38 @@ namespace BEQuestionBank.API.Controllers
 
         // POST: api/Khoa
         [HttpPost]
-        [HttpPost]
+        [SwaggerOperation(Summary = "Thêmn một Khoa")]
         public async Task<IActionResult> Create([FromBody] KhoaCreateDto model)
         {
-            if (model == null)
+            var existingKhoa = await _service.GetByTenKhoaAsync(model.TenKhoa);
+
+            if (existingKhoa != null)
             {
-                return BadRequest(new
+                if(existingKhoa.XoaTam)
                 {
-                    message = "Khoa model is required."
-                });
+                    existingKhoa.XoaTam = false;
+                    await _service.UpdateAsync(existingKhoa);
+                    return Ok(existingKhoa); 
+                }
+                throw new ArgumentException($"Khoa with name {model.TenKhoa} already exists");
             }
 
-            if (!ModelState.IsValid)
+            var newKhoa = new Khoa()
             {
-                return BadRequest(new
-                {
-                    message = "Invalid model data.",
-                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                });
-            }
-
-            try
-            {
-                var khoa = new Khoa
-                {
-                    MaKhoa = CodeGenerator.GenerateKhoaCode(), // Will be generated if null
-                    TenKhoa = model.TenKhoa ?? throw new ArgumentException("TenKhoa is required"),
-                    // Map other properties as needed
-                };
-
-                await _service.AddAsync(khoa);
-                return Ok(new
-                {
-                    message = "Khoa created successfully",
-                    data = model
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log the exception using your logging mechanism
-                // e.g., _logger.LogError(ex, "Error creating Khoa");
-                return StatusCode(500, new
-                {
-                    message = "An error occurred while creating Khoa.",
-                    error = ex.Message
-                });
-            }
+                TenKhoa = model.TenKhoa,
+                XoaTam = false
+            };
+            await _service.AddAsync(newKhoa);
+            
+            return Ok(newKhoa);
+        }
+        
+        // GET: api/Khoa
+        [HttpGet]
+        [SwaggerOperation(Summary = "Lấy danh sách Khoa")]
+        public async Task<IEnumerable<Khoa>> GetAll()
+        {
+            return await _service.GetAllAsync();
         }
     }
 }
