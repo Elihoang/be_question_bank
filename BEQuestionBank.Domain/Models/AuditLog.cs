@@ -15,7 +15,7 @@ public class AuditLog
     public string? TenNguoiDung { get; set; }
     public DateTime ThoiGianThucHien { get; set; } = DateTime.Now;
     public string? DiaChiIP { get; set; }
-    public string? UserAgent { get; set; }
+    public string? TacNhanNguoiDung { get; set; }
     public string? GhiChu { get; set; }
 
     public virtual NguoiDung? NguoiDung { get; set; }

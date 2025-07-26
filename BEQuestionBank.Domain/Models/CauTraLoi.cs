@@ -13,5 +13,5 @@ public class CauTraLoi
     public bool LaDapAn { get; set; }
 
     public virtual CauHoi CauHoi { get; set; }
-    public ICollection<FileDinhKem> FileDinhKems { get; set; }
+    public ICollection<File> FileDinhKems { get; set; }
 }
