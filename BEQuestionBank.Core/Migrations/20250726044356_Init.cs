@@ -7,52 +7,70 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BEQuestionBank.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Khoas",
+                name: "Khoa",
                 columns: table => new
                 {
-                    MaKhoa = table.Column<string>(type: "text", nullable: false),
+                    MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
                     TenKhoa = table.Column<string>(type: "text", nullable: false),
+                    MoTa = table.Column<string>(type: "text", nullable: false),
+                    XoaTamKhoa = table.Column<bool>(type: "boolean", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Khoas", x => x.MaKhoa);
+                    table.PrimaryKey("PK_Khoa", x => x.MaKhoa);
                 });
 
             migrationBuilder.CreateTable(
-                name: "MonHocs",
+                name: "YeuCauRutTrich",
                 columns: table => new
                 {
-                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
-                    TenMonHoc = table.Column<string>(type: "text", nullable: false),
-                    MaSoMonHoc = table.Column<string>(type: "text", nullable: false),
-                    SoTinChi = table.Column<int>(type: "integer", nullable: false),
-                    MaKhoa = table.Column<string>(type: "text", nullable: false),
-                    KhoaMaKhoa = table.Column<string>(type: "text", nullable: true),
-                    NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    MaYeuCau = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    NoiDungRutTrich = table.Column<string>(type: "text", nullable: true),
+                    GhiChu = table.Column<string>(type: "text", nullable: true),
+                    NgayYeuCau = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    NgayXuLy = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DaXuLy = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MonHocs", x => x.MaMonHoc);
+                    table.PrimaryKey("PK_YeuCauRutTrich", x => x.MaYeuCau);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MonHoc",
+                columns: table => new
+                {
+                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenMonHoc = table.Column<string>(type: "text", nullable: false),
+                    MaSoMonHoc = table.Column<string>(type: "text", nullable: false),
+                    SoTinChi = table.Column<int>(type: "integer", nullable: true),
+                    MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
+                    KhoaMaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
+                    NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MonHoc", x => x.MaMonHoc);
                     table.ForeignKey(
-                        name: "FK_MonHocs_Khoas_KhoaMaKhoa",
+                        name: "FK_MonHoc_Khoa_KhoaMaKhoa",
                         column: x => x.KhoaMaKhoa,
-                        principalTable: "Khoas",
+                        principalTable: "Khoa",
                         principalColumn: "MaKhoa");
                 });
 
             migrationBuilder.CreateTable(
-                name: "NguoiDungs",
+                name: "NguoiDung",
                 columns: table => new
                 {
                     MaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
@@ -63,68 +81,69 @@ namespace BEQuestionBank.Core.Migrations
                     VaiTro = table.Column<int>(type: "integer", nullable: false),
                     BiKhoa = table.Column<bool>(type: "boolean", nullable: false),
                     MaKhoa = table.Column<string>(type: "text", nullable: true),
-                    KhoaMaKhoa = table.Column<string>(type: "text", nullable: true),
+                    KhoaMaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_NguoiDungs", x => x.MaNguoiDung);
+                    table.PrimaryKey("PK_NguoiDung", x => x.MaNguoiDung);
                     table.ForeignKey(
-                        name: "FK_NguoiDungs_Khoas_KhoaMaKhoa",
+                        name: "FK_NguoiDung_Khoa_KhoaMaKhoa",
                         column: x => x.KhoaMaKhoa,
-                        principalTable: "Khoas",
+                        principalTable: "Khoa",
                         principalColumn: "MaKhoa");
                 });
 
             migrationBuilder.CreateTable(
-                name: "DeThis",
+                name: "DeThi",
                 columns: table => new
                 {
-                    MaDeThi = table.Column<string>(type: "text", nullable: false),
-                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
+                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
                     TenDeThi = table.Column<string>(type: "text", nullable: false),
                     DaDuyet = table.Column<bool>(type: "boolean", nullable: false),
                     SoCauHoi = table.Column<int>(type: "integer", nullable: true),
-                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: false),
+                    MonHocMaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DeThis", x => x.MaDeThi);
+                    table.PrimaryKey("PK_DeThi", x => x.MaDeThi);
                     table.ForeignKey(
-                        name: "FK_DeThis_MonHocs_MonHocMaMonHoc",
+                        name: "FK_DeThi_MonHoc_MonHocMaMonHoc",
                         column: x => x.MonHocMaMonHoc,
-                        principalTable: "MonHocs",
+                        principalTable: "MonHoc",
                         principalColumn: "MaMonHoc",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Phans",
+                name: "Phan",
                 columns: table => new
                 {
-                    MaPhan = table.Column<string>(type: "text", nullable: false),
-                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
+                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
                     TenPhan = table.Column<string>(type: "text", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     ThuTu = table.Column<int>(type: "integer", nullable: false),
+                    SoLuongCauHoi = table.Column<int>(type: "integer", nullable: false),
+                    MaPhanCha = table.Column<Guid>(type: "uuid", nullable: true),
+                    MaSoPhan = table.Column<int>(type: "integer", nullable: true),
+                    XoaTamPhan = table.Column<bool>(type: "boolean", nullable: true),
                     LaCauHoiNhom = table.Column<bool>(type: "boolean", nullable: false),
-                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: true),
+                    MonHocMaMonHoc = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Phans", x => x.MaPhan);
+                    table.PrimaryKey("PK_Phan", x => x.MaPhan);
                     table.ForeignKey(
-                        name: "FK_Phans_MonHocs_MonHocMaMonHoc",
+                        name: "FK_Phan_MonHoc_MonHocMaMonHoc",
                         column: x => x.MonHocMaMonHoc,
-                        principalTable: "MonHocs",
+                        principalTable: "MonHoc",
                         principalColumn: "MaMonHoc");
                 });
 
@@ -143,7 +162,7 @@ namespace BEQuestionBank.Core.Migrations
                     TenNguoiDung = table.Column<string>(type: "text", nullable: true),
                     ThoiGianThucHien = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DiaChiIP = table.Column<string>(type: "text", nullable: true),
-                    UserAgent = table.Column<string>(type: "text", nullable: true),
+                    TacNhanNguoiDung = table.Column<string>(type: "text", nullable: true),
                     GhiChu = table.Column<string>(type: "text", nullable: true),
                     NguoiDungMaNguoiDung = table.Column<Guid>(type: "uuid", nullable: true)
                 },
@@ -151,83 +170,54 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     table.PrimaryKey("PK_AuditLogs", x => x.MaNhatKy);
                     table.ForeignKey(
-                        name: "FK_AuditLogs_NguoiDungs_NguoiDungMaNguoiDung",
+                        name: "FK_AuditLogs_NguoiDung_NguoiDungMaNguoiDung",
                         column: x => x.NguoiDungMaNguoiDung,
-                        principalTable: "NguoiDungs",
+                        principalTable: "NguoiDung",
                         principalColumn: "MaNguoiDung");
                 });
 
             migrationBuilder.CreateTable(
-                name: "GiangVienMonHocs",
+                name: "CauHoi",
                 columns: table => new
                 {
-                    MaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaMonHoc = table.Column<string>(type: "text", nullable: false),
-                    TuNgay = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DenNgay = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    GhiChu = table.Column<string>(type: "text", nullable: true),
-                    NguoiDungMaNguoiDung = table.Column<Guid>(type: "uuid", nullable: false),
-                    MonHocMaMonHoc = table.Column<string>(type: "text", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_GiangVienMonHocs", x => x.MaNguoiDung);
-                    table.ForeignKey(
-                        name: "FK_GiangVienMonHocs_MonHocs_MonHocMaMonHoc",
-                        column: x => x.MonHocMaMonHoc,
-                        principalTable: "MonHocs",
-                        principalColumn: "MaMonHoc",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_GiangVienMonHocs_NguoiDungs_NguoiDungMaNguoiDung",
-                        column: x => x.NguoiDungMaNguoiDung,
-                        principalTable: "NguoiDungs",
-                        principalColumn: "MaNguoiDung",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CauHois",
-                columns: table => new
-                {
-                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
-                    MaPhan = table.Column<string>(type: "text", nullable: false),
+                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
                     MaSoCauHoi = table.Column<int>(type: "integer", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     HoanVi = table.Column<bool>(type: "boolean", nullable: false),
                     CapDo = table.Column<short>(type: "smallint", nullable: false),
-                    LaCauHoiNhom = table.Column<bool>(type: "boolean", nullable: false),
+                    SoCauHoiCon = table.Column<int>(type: "integer", nullable: false),
                     MaCauHoiCha = table.Column<string>(type: "text", nullable: true),
                     TrangThai = table.Column<bool>(type: "boolean", nullable: false),
                     SoLanDuocThi = table.Column<int>(type: "integer", nullable: false),
                     SoLanDung = table.Column<int>(type: "integer", nullable: false),
-                    DoPhanCach = table.Column<float>(type: "real", nullable: true),
+                    DoPhanCachCauHoi = table.Column<float>(type: "real", nullable: true),
+                    ChuanDauRa = table.Column<int>(type: "integer", nullable: true),
                     NgaySua = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     NguoiTao = table.Column<Guid>(type: "uuid", nullable: true),
-                    PhanMaPhan = table.Column<string>(type: "text", nullable: false),
-                    CauHoiChaMaCauHoi = table.Column<string>(type: "text", nullable: true),
+                    PhanMaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    CauHoiChaMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
                     NguoiDungMaNguoiDung = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    XoaTam = table.Column<bool>(type: "boolean", nullable: false)
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CauHois", x => x.MaCauHoi);
+                    table.PrimaryKey("PK_CauHoi", x => x.MaCauHoi);
                     table.ForeignKey(
-                        name: "FK_CauHois_CauHois_CauHoiChaMaCauHoi",
+                        name: "FK_CauHoi_CauHoi_CauHoiChaMaCauHoi",
                         column: x => x.CauHoiChaMaCauHoi,
-                        principalTable: "CauHois",
+                        principalTable: "CauHoi",
                         principalColumn: "MaCauHoi");
                     table.ForeignKey(
-                        name: "FK_CauHois_NguoiDungs_NguoiDungMaNguoiDung",
+                        name: "FK_CauHoi_NguoiDung_NguoiDungMaNguoiDung",
                         column: x => x.NguoiDungMaNguoiDung,
-                        principalTable: "NguoiDungs",
+                        principalTable: "NguoiDung",
                         principalColumn: "MaNguoiDung");
                     table.ForeignKey(
-                        name: "FK_CauHois_Phans_PhanMaPhan",
+                        name: "FK_CauHoi_Phan_PhanMaPhan",
                         column: x => x.PhanMaPhan,
-                        principalTable: "Phans",
+                        principalTable: "Phan",
                         principalColumn: "MaPhan",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -241,75 +231,76 @@ namespace BEQuestionBank.Core.Migrations
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     ThuTu = table.Column<int>(type: "integer", nullable: false),
                     LaDapAn = table.Column<bool>(type: "boolean", nullable: false),
-                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true)
+                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CauTraLois", x => x.MaCauTraLoi);
                     table.ForeignKey(
-                        name: "FK_CauTraLois_CauHois_CauHoiMaCauHoi",
+                        name: "FK_CauTraLois_CauHoi_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
-                        principalTable: "CauHois",
-                        principalColumn: "MaCauHoi");
+                        principalTable: "CauHoi",
+                        principalColumn: "MaCauHoi",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "ChiTietDeThis",
+                name: "ChiTietDeThi",
                 columns: table => new
                 {
-                    MaDeThi = table.Column<string>(type: "text", nullable: false),
-                    MaPhan = table.Column<string>(type: "text", nullable: false),
-                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
+                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
                     ThuTu = table.Column<int>(type: "integer", nullable: true),
-                    DeThiMaDeThi = table.Column<string>(type: "text", nullable: false),
-                    PhanMaPhan = table.Column<string>(type: "text", nullable: false),
-                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true)
+                    DeThiMaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
+                    PhanMaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ChiTietDeThis", x => x.MaDeThi);
+                    table.PrimaryKey("PK_ChiTietDeThi", x => x.MaDeThi);
                     table.ForeignKey(
-                        name: "FK_ChiTietDeThis_CauHois_CauHoiMaCauHoi",
+                        name: "FK_ChiTietDeThi_CauHoi_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
-                        principalTable: "CauHois",
-                        principalColumn: "MaCauHoi");
+                        principalTable: "CauHoi",
+                        principalColumn: "MaCauHoi",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ChiTietDeThis_DeThis_DeThiMaDeThi",
+                        name: "FK_ChiTietDeThi_DeThi_DeThiMaDeThi",
                         column: x => x.DeThiMaDeThi,
-                        principalTable: "DeThis",
+                        principalTable: "DeThi",
                         principalColumn: "MaDeThi",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ChiTietDeThis_Phans_PhanMaPhan",
+                        name: "FK_ChiTietDeThi_Phan_PhanMaPhan",
                         column: x => x.PhanMaPhan,
-                        principalTable: "Phans",
+                        principalTable: "Phan",
                         principalColumn: "MaPhan",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "FileDinhKems",
+                name: "Files",
                 columns: table => new
                 {
-                    MaFile = table.Column<string>(type: "text", nullable: false),
-                    MaCauHoi = table.Column<string>(type: "text", nullable: true),
-                    MaCauTraLoi = table.Column<string>(type: "text", nullable: true),
+                    MaFile = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
                     TenFile = table.Column<string>(type: "text", nullable: true),
-                    DuongDan = table.Column<string>(type: "text", nullable: true),
                     LoaiFile = table.Column<int>(type: "integer", nullable: true),
-                    CauHoiMaCauHoi = table.Column<string>(type: "text", nullable: true),
+                    MaCauTraLoi = table.Column<string>(type: "text", nullable: true),
+                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
                     CauTraLoiMaCauTraLoi = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FileDinhKems", x => x.MaFile);
+                    table.PrimaryKey("PK_Files", x => x.MaFile);
                     table.ForeignKey(
-                        name: "FK_FileDinhKems_CauHois_CauHoiMaCauHoi",
+                        name: "FK_Files_CauHoi_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
-                        principalTable: "CauHois",
+                        principalTable: "CauHoi",
                         principalColumn: "MaCauHoi");
                     table.ForeignKey(
-                        name: "FK_FileDinhKems_CauTraLois_CauTraLoiMaCauTraLoi",
+                        name: "FK_Files_CauTraLois_CauTraLoiMaCauTraLoi",
                         column: x => x.CauTraLoiMaCauTraLoi,
                         principalTable: "CauTraLois",
                         principalColumn: "MaCauTraLoi");
@@ -321,18 +312,18 @@ namespace BEQuestionBank.Core.Migrations
                 column: "NguoiDungMaNguoiDung");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CauHois_CauHoiChaMaCauHoi",
-                table: "CauHois",
+                name: "IX_CauHoi_CauHoiChaMaCauHoi",
+                table: "CauHoi",
                 column: "CauHoiChaMaCauHoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CauHois_NguoiDungMaNguoiDung",
-                table: "CauHois",
+                name: "IX_CauHoi_NguoiDungMaNguoiDung",
+                table: "CauHoi",
                 column: "NguoiDungMaNguoiDung");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CauHois_PhanMaPhan",
-                table: "CauHois",
+                name: "IX_CauHoi_PhanMaPhan",
+                table: "CauHoi",
                 column: "PhanMaPhan");
 
             migrationBuilder.CreateIndex(
@@ -341,58 +332,48 @@ namespace BEQuestionBank.Core.Migrations
                 column: "CauHoiMaCauHoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDeThis_CauHoiMaCauHoi",
-                table: "ChiTietDeThis",
+                name: "IX_ChiTietDeThi_CauHoiMaCauHoi",
+                table: "ChiTietDeThi",
                 column: "CauHoiMaCauHoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDeThis_DeThiMaDeThi",
-                table: "ChiTietDeThis",
+                name: "IX_ChiTietDeThi_DeThiMaDeThi",
+                table: "ChiTietDeThi",
                 column: "DeThiMaDeThi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDeThis_PhanMaPhan",
-                table: "ChiTietDeThis",
+                name: "IX_ChiTietDeThi_PhanMaPhan",
+                table: "ChiTietDeThi",
                 column: "PhanMaPhan");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DeThis_MonHocMaMonHoc",
-                table: "DeThis",
+                name: "IX_DeThi_MonHocMaMonHoc",
+                table: "DeThi",
                 column: "MonHocMaMonHoc");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FileDinhKems_CauHoiMaCauHoi",
-                table: "FileDinhKems",
+                name: "IX_Files_CauHoiMaCauHoi",
+                table: "Files",
                 column: "CauHoiMaCauHoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FileDinhKems_CauTraLoiMaCauTraLoi",
-                table: "FileDinhKems",
+                name: "IX_Files_CauTraLoiMaCauTraLoi",
+                table: "Files",
                 column: "CauTraLoiMaCauTraLoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_GiangVienMonHocs_MonHocMaMonHoc",
-                table: "GiangVienMonHocs",
-                column: "MonHocMaMonHoc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_GiangVienMonHocs_NguoiDungMaNguoiDung",
-                table: "GiangVienMonHocs",
-                column: "NguoiDungMaNguoiDung");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MonHocs_KhoaMaKhoa",
-                table: "MonHocs",
+                name: "IX_MonHoc_KhoaMaKhoa",
+                table: "MonHoc",
                 column: "KhoaMaKhoa");
 
             migrationBuilder.CreateIndex(
-                name: "IX_NguoiDungs_KhoaMaKhoa",
-                table: "NguoiDungs",
+                name: "IX_NguoiDung_KhoaMaKhoa",
+                table: "NguoiDung",
                 column: "KhoaMaKhoa");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Phans_MonHocMaMonHoc",
-                table: "Phans",
+                name: "IX_Phan_MonHocMaMonHoc",
+                table: "Phan",
                 column: "MonHocMaMonHoc");
         }
 
@@ -403,34 +384,34 @@ namespace BEQuestionBank.Core.Migrations
                 name: "AuditLogs");
 
             migrationBuilder.DropTable(
-                name: "ChiTietDeThis");
+                name: "ChiTietDeThi");
 
             migrationBuilder.DropTable(
-                name: "FileDinhKems");
+                name: "Files");
 
             migrationBuilder.DropTable(
-                name: "GiangVienMonHocs");
+                name: "YeuCauRutTrich");
 
             migrationBuilder.DropTable(
-                name: "DeThis");
+                name: "DeThi");
 
             migrationBuilder.DropTable(
                 name: "CauTraLois");
 
             migrationBuilder.DropTable(
-                name: "CauHois");
+                name: "CauHoi");
 
             migrationBuilder.DropTable(
-                name: "NguoiDungs");
+                name: "NguoiDung");
 
             migrationBuilder.DropTable(
-                name: "Phans");
+                name: "Phan");
 
             migrationBuilder.DropTable(
-                name: "MonHocs");
+                name: "MonHoc");
 
             migrationBuilder.DropTable(
-                name: "Khoas");
+                name: "Khoa");
         }
     }
 }

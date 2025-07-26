@@ -11,7 +11,10 @@ builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
 
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("PostgresConnection"),
+        x => x.MigrationsAssembly("BEQuestionBank.Core") // 👈 Thêm dòng này
+    ));
 
 // Cấu hình CORS
 builder.Services.AddCors(options =>

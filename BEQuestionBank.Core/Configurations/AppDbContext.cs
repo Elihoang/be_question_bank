@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using BEQuestionBank.Domain.Models;
+using File = BEQuestionBank.Domain.Models.File;
 
 namespace BEQuestionBank.Core.Configurations;
 
@@ -17,8 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<CauTraLoi> CauTraLois { get; set; }
     public DbSet<DeThi> DeThis { get; set; }
     public DbSet<ChiTietDeThi> ChiTietDeThis { get; set; }
-    public DbSet<GiangVienMonHoc> GiangVienMonHocs { get; set; }
-    public DbSet<FileDinhKem> FileDinhKems { get; set; }
+    public DbSet<YeuCauRutTrich> YeuCauRutTrichs { get; set; }
+    public DbSet<File> FileDinhKems { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
