@@ -8,7 +8,7 @@ namespace BEQuestionBank.Domain.Models;
 public class Khoa : ModelBase
 {
     [Key]
-    public Guid MaKhoa { get; set; }
+    public Guid MaKhoa { get; set; } = Guid.NewGuid();
     public string TenKhoa { get; set; } = string.Empty;
     public string MoTa { get; set; } = string.Empty;
 
