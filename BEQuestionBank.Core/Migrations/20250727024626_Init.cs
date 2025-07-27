@@ -223,11 +223,11 @@ namespace BEQuestionBank.Core.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CauTraLois",
+                name: "CauTraLoi",
                 columns: table => new
                 {
-                    MaCauTraLoi = table.Column<string>(type: "text", nullable: false),
-                    MaCauHoi = table.Column<string>(type: "text", nullable: false),
+                    MaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
                     NoiDung = table.Column<string>(type: "text", nullable: true),
                     ThuTu = table.Column<int>(type: "integer", nullable: false),
                     LaDapAn = table.Column<bool>(type: "boolean", nullable: false),
@@ -235,9 +235,9 @@ namespace BEQuestionBank.Core.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CauTraLois", x => x.MaCauTraLoi);
+                    table.PrimaryKey("PK_CauTraLoi", x => x.MaCauTraLoi);
                     table.ForeignKey(
-                        name: "FK_CauTraLois_CauHoi_CauHoiMaCauHoi",
+                        name: "FK_CauTraLoi_CauHoi_CauHoiMaCauHoi",
                         column: x => x.CauHoiMaCauHoi,
                         principalTable: "CauHoi",
                         principalColumn: "MaCauHoi",
@@ -289,7 +289,7 @@ namespace BEQuestionBank.Core.Migrations
                     LoaiFile = table.Column<int>(type: "integer", nullable: true),
                     MaCauTraLoi = table.Column<string>(type: "text", nullable: true),
                     CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
-                    CauTraLoiMaCauTraLoi = table.Column<string>(type: "text", nullable: true)
+                    CauTraLoiMaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -300,9 +300,9 @@ namespace BEQuestionBank.Core.Migrations
                         principalTable: "CauHoi",
                         principalColumn: "MaCauHoi");
                     table.ForeignKey(
-                        name: "FK_Files_CauTraLois_CauTraLoiMaCauTraLoi",
+                        name: "FK_Files_CauTraLoi_CauTraLoiMaCauTraLoi",
                         column: x => x.CauTraLoiMaCauTraLoi,
-                        principalTable: "CauTraLois",
+                        principalTable: "CauTraLoi",
                         principalColumn: "MaCauTraLoi");
                 });
 
@@ -327,8 +327,8 @@ namespace BEQuestionBank.Core.Migrations
                 column: "PhanMaPhan");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CauTraLois_CauHoiMaCauHoi",
-                table: "CauTraLois",
+                name: "IX_CauTraLoi_CauHoiMaCauHoi",
+                table: "CauTraLoi",
                 column: "CauHoiMaCauHoi");
 
             migrationBuilder.CreateIndex(
@@ -396,7 +396,7 @@ namespace BEQuestionBank.Core.Migrations
                 name: "DeThi");
 
             migrationBuilder.DropTable(
-                name: "CauTraLois");
+                name: "CauTraLoi");
 
             migrationBuilder.DropTable(
                 name: "CauHoi");

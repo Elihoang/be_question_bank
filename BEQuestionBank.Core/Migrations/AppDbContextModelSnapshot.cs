@@ -153,8 +153,9 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.CauTraLoi", b =>
                 {
-                    b.Property<string>("MaCauTraLoi")
-                        .HasColumnType("text");
+                    b.Property<Guid>("MaCauTraLoi")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CauHoiMaCauHoi")
                         .HasColumnType("uuid");
@@ -162,9 +163,8 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<bool>("LaDapAn")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("MaCauHoi")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("MaCauHoi")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("NoiDung")
                         .HasColumnType("text");
@@ -176,7 +176,7 @@ namespace BEQuestionBank.Core.Migrations
 
                     b.HasIndex("CauHoiMaCauHoi");
 
-                    b.ToTable("CauTraLois");
+                    b.ToTable("CauTraLoi");
                 });
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.ChiTietDeThi", b =>
@@ -258,8 +258,8 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<Guid?>("CauHoiMaCauHoi")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("CauTraLoiMaCauTraLoi")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("CauTraLoiMaCauTraLoi")
+                        .HasColumnType("uuid");
 
                     b.Property<int?>("LoaiFile")
                         .HasColumnType("integer");
