@@ -6,13 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BEQuestionBank.Core.Repositories;
 
-public class KhoaRepository : GenericRepository<Khoa>, IKhoaRepository
+public class KhoaRepository(AppDbContext context) : GenericRepository<Khoa>(context), IKhoaRepository
 {
-    public KhoaRepository(AppDbContext context) : base(context)
-    {
-    }
-
-    public async Task<Khoa> GetByIdAsync(string id)
+    public new async Task<Khoa> GetByIdAsync(string id)
     {
         return await _context.Khoas.FindAsync(id);
     }
@@ -35,13 +31,6 @@ public class KhoaRepository : GenericRepository<Khoa>, IKhoaRepository
     public async Task<bool> ExistsAsync(Expression<Func<Khoa, bool>> predicate)
     {
         return await _context.Khoas.AnyAsync(predicate);
-    }
-
-    public async Task<int> CountAsync(Expression<Func<Khoa, bool>> predicate = null)
-    {
-        return predicate == null 
-            ? await _context.Khoas.CountAsync() 
-            : await _context.Khoas.CountAsync(predicate);
     }
 
     public async Task<Khoa> GetByTenKhoaAsync(string tenKhoa)

@@ -10,7 +10,6 @@
       <Folder Include="Features\" />
       <Folder Include="Identity\" />
       <Folder Include="Mapping\" />
-      <Folder Include="Services\" />
       <Folder Include="Validation\" />
     </ItemGroup>
 
