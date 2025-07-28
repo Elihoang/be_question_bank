@@ -7,10 +7,12 @@ namespace BEQuestionBank.Domain.Models;
 public class ChiTietDeThi
 {
     [Key]
-    public Guid MaDeThi { get; set; }
+    public Guid MaDeThi { get; set; } = Guid.NewGuid();
     [Required]
+    [ForeignKey("Phan")]
     public Guid MaPhan { get; set; }
     [Required]
+    [ForeignKey("CauHoi")]
     public Guid MaCauHoi { get; set; }
     public int? ThuTu { get; set; }
 

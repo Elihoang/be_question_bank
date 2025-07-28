@@ -9,6 +9,7 @@ public class Phan : ModelBase
 {
     [Key]
     public Guid MaPhan { get; set; }
+    [ForeignKey("MonHoc")]
     public Guid MaMonHoc { get; set; }
     [Required]
     public string TenPhan { get; set; }

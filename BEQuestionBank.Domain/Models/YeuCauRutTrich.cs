@@ -8,11 +8,16 @@ public class YeuCauRutTrich
 {
     [Key]
     public Guid MaYeuCau { get; set; }
+    [ForeignKey("NguoiDung")]
     public Guid MaNguoiDung { get; set; }
+    [ForeignKey("MonHoc")]
     public Guid MaMonHoc { get; set; }
     public string? NoiDungRutTrich { get; set; }
     public string? GhiChu { get; set; }
     public DateTime? NgayYeuCau { get; set; }
     public DateTime? NgayXuLy { get; set; }
     public bool? DaXuLy { get; set; }
+    
+    public virtual MonHoc? MonHoc { get; set; }
+    public virtual NguoiDung? NguoiDung { get; set; }
 }

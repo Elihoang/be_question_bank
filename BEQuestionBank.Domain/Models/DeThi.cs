@@ -8,7 +8,8 @@ namespace BEQuestionBank.Domain.Models;
 public class DeThi : ModelBase
 {
     [Key] 
-    public Guid MaDeThi { get; set; }
+    public Guid MaDeThi { get; set; } = Guid.NewGuid();
+    [ForeignKey("MonHoc")]
     public Guid MaMonHoc { get; set; }
     public string TenDeThi { get; set; } = string.Empty;
     public bool DaDuyet { get; set; } = false;
