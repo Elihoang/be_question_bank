@@ -42,21 +42,9 @@ public class GenericRepository<T> : IRepository<T> where T : class
         await _context.SaveChangesAsync();
     }
 
-    public virtual async Task AddRangeAsync(IEnumerable<T> entities)
-    {
-        await _dbSet.AddRangeAsync(entities);
-        await _context.SaveChangesAsync();
-    }
-
     public virtual async Task UpdateAsync(T entity)
     {
         _dbSet.Update(entity);
-        await _context.SaveChangesAsync();
-    }
-
-    public virtual async Task UpdateRangeAsync(IEnumerable<T> entities)
-    {
-        _dbSet.UpdateRange(entities);
         await _context.SaveChangesAsync();
     }
 
@@ -66,21 +54,9 @@ public class GenericRepository<T> : IRepository<T> where T : class
         await _context.SaveChangesAsync();
     }
 
-    public virtual async Task DeleteRangeAsync(IEnumerable<T> entities)
-    {
-        _dbSet.RemoveRange(entities);
-        await _context.SaveChangesAsync();
-    }
-
     public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
     {
         return await _dbSet.AnyAsync(predicate);
     }
 
-    public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
-    {
-        return predicate == null
-            ? await _dbSet.CountAsync()
-            : await _dbSet.CountAsync(predicate);
-    }
 }

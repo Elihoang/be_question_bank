@@ -12,6 +12,8 @@ public class MonHoc : ModelBase
     public string TenMonHoc { get; set; } = string.Empty;
     public string MaSoMonHoc { get; set; } = string.Empty;
     public int? SoTinChi { get; set; }
+    [Column("XoaTamMonHoc")]
+    public bool? XoaTam { get; set; } = false;
     public Guid MaKhoa { get; set; }
     public Khoa? Khoa { get; set; }
 
