@@ -4,5 +4,5 @@ namespace BEQuestionBank.Domain.Interfaces.Service;
 
 public interface ICauTraLoiService : IService<CauTraLoi>
 {
-    Task<List<CauTraLoi>> GetByMaCauHoi(Guid maCauHoi);
+    Task<IEnumerable<CauTraLoi>> GetByMaCauHoi(Guid maCauHoi);
 }
