@@ -23,5 +23,5 @@ public class PhanUpdateDto
 
     public bool LaCauHoiNhom { get; set; } = false;
     
-    public DateTime NgayCapNhat { get; set; } = DateTime.UtcNow;
+    public DateTime NgayCapNhap { get; set; } = DateTime.UtcNow;
 }
