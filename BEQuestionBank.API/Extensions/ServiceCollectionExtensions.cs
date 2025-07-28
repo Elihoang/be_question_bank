@@ -17,10 +17,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IService<Khoa>, KhoaService>();
         services.AddScoped<IService<CauHoi>, CauHoiService>();
         services.AddScoped<IService<Phan>, PhanService>();
+        services.AddScoped<IService<MonHoc>, MonHocService>();
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
         services.AddScoped<IKhoaService, KhoaService>();
+
+        // MonHoc
+        services.AddScoped<IMonHocRepository, MonHocRepository>();
+        services.AddScoped<IMonHocService, MonHocService>();
         
         // CauHoi
         services.AddScoped<ICauHoiRepository, CauHoiRepository>();
@@ -29,8 +34,6 @@ public static class ServiceCollectionExtensions
         //Phan
         services.AddScoped<IPhanRepository, PhanRepository>();
         services.AddScoped<IPhanService, PhanService>();
-        // Nếu dùng KhoaService<Khoa>: (không khuyến khích unless cần)
-        // services.AddScoped<IKhoaService<Khoa>, KhoaService<Khoa>>();
 
         return services;
     }

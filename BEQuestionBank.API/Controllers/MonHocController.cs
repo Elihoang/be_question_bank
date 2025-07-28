@@ -22,14 +22,14 @@ namespace BEQuestionBank.API.Controllers
             {
                 var monHoc = await _service.GetByIdAsync(Guid.Parse(id));
                 if (monHoc == null)
-                    return NotFound($"Không tìm thấy môn học với mã {id}");
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy môn học với mã {id}");
 
-                return Ok(monHoc);
+                return StatusCode(StatusCodes.Status200OK, monHoc);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tìm môn học");
-                return StatusCode(500, "Lỗi máy chủ");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Lỗi máy chủ");
             }
         }
 
@@ -75,12 +75,12 @@ namespace BEQuestionBank.API.Controllers
                 };
 
                 await _service.AddAsync(monHoc);
-                return StatusCode(201, model);
+                return StatusCode(StatusCodes.Status201Created, model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi thêm môn học");
-                return StatusCode(500, "Lỗi máy chủ");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Lỗi máy chủ");
             }
         }
 
@@ -90,7 +90,7 @@ namespace BEQuestionBank.API.Controllers
         {
             var monHoc = await _service.GetByIdAsync(Guid.Parse(id));
             if (monHoc == null)
-                return NotFound($"Không tìm thấy môn học với mã {id}");
+                return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy môn học với mã {id}");
 
             monHoc.TenMonHoc = model.TenMonHoc;
             monHoc.MaKhoa = model.MaKhoa;
@@ -98,7 +98,7 @@ namespace BEQuestionBank.API.Controllers
 
             await _service.UpdateAsync(monHoc);
 
-            return Ok(new MonHocDto
+            return StatusCode(StatusCodes.Status200OK, new MonHocDto
             {
                 MaMonHoc = monHoc.MaMonHoc,
                 TenMonHoc = monHoc.TenMonHoc,
@@ -116,7 +116,7 @@ namespace BEQuestionBank.API.Controllers
                 return NotFound($"Không tìm thấy môn học với mã {id}");
 
             await _service.DeleteAsync(monHoc);
-            return Ok($"Đã xóa môn học có mã {id}");
+            return StatusCode(StatusCodes.Status200OK, $"Đã xóa môn học có mã {id}");
         }
 
         [HttpPatch("{id}/XoaTam")]
@@ -129,7 +129,7 @@ namespace BEQuestionBank.API.Controllers
 
             monHoc.XoaTam = true;
             await _service.UpdateAsync(monHoc);
-            return Ok($"Đã xóa tạm thời môn học: {monHoc.TenMonHoc}");
+            return StatusCode(StatusCodes.Status200OK, $"Đã xóa tạm thời môn học: {monHoc.TenMonHoc}");
         }
 
         [HttpPatch("{id}/KhoiPhuc")]
@@ -142,7 +142,7 @@ namespace BEQuestionBank.API.Controllers
 
             monHoc.XoaTam = false;
             await _service.UpdateAsync(monHoc);
-            return Ok($"Đã khôi phục môn học: {monHoc.TenMonHoc}");
+            return StatusCode(StatusCodes.Status200OK, $"Đã khôi phục môn học: {monHoc.TenMonHoc}");
         }
     }
 }
