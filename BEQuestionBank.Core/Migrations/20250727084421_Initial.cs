@@ -4,10 +4,12 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace BEQuestionBank.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -54,6 +56,7 @@ namespace BEQuestionBank.Core.Migrations
                     TenMonHoc = table.Column<string>(type: "text", nullable: false),
                     MaSoMonHoc = table.Column<string>(type: "text", nullable: false),
                     SoTinChi = table.Column<int>(type: "integer", nullable: true),
+                    XoaTamMonHoc = table.Column<bool>(type: "boolean", nullable: true),
                     MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
                     KhoaMaKhoa = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -306,6 +309,32 @@ namespace BEQuestionBank.Core.Migrations
                         principalColumn: "MaCauTraLoi");
                 });
 
+            migrationBuilder.InsertData(
+                table: "Khoa",
+                columns: new[] { "MaKhoa", "MoTa", "NgayCapNhap", "NgayTao", "TenKhoa", "XoaTamKhoa" },
+                values: new object[,]
+                {
+                    { new Guid("13331579-a09e-4e0c-b5e7-fa9d8900f7a7"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2447), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2447), "Khoa QT Du lịch - Nhà hàng - Khách sạn", false },
+                    { new Guid("199a0115-e4d5-46ef-82dc-b017d53c807b"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2644), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2643), "Viện Kỹ thuật HUTECH", false },
+                    { new Guid("2938cbeb-53de-4f3b-9197-5c8f422c58e3"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2420), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2419), "Khoa Kiến trúc - Mỹ thuật", false },
+                    { new Guid("46063d4c-4b70-45c5-b303-23265152a2d4"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2389), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2388), "Khoa Tài chính - Thương mại", false },
+                    { new Guid("48241a01-93d8-4571-9d17-94c79adb8f03"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2689), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2689), "Viện Khoa học Xã hội và Nhân văn", false },
+                    { new Guid("53a219ab-ed94-4d87-923a-b0ee267d3cf4"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2846), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2846), "Viện Đào tạo Quốc tế HUTECH", false },
+                    { new Guid("753ab298-018a-4909-85ba-52fc46e0371e"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2621), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2620), "Khoa Truyền thông - Thiết kế", false },
+                    { new Guid("86348359-803b-425c-9015-0f33b3d66a63"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(147), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(146), "Khoa Công nghệ Thông tin", false },
+                    { new Guid("8bfb986d-9303-42b2-a95a-1e38f5362c45"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2915), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2915), "Trung tâm Tin học - Ngoại ngữ - Kỹ năng", false },
+                    { new Guid("91acaf9b-6777-4ca3-86bb-4adf3d7791a2"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2893), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2893), "Viện Công nghệ Việt - Nhật", false },
+                    { new Guid("abec0c99-965c-4ce2-b27d-ce89323bf33e"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2475), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2475), "Khoa Tiếng Anh", false },
+                    { new Guid("c8318452-3049-4bf1-85aa-069e9582d0f5"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2502), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2502), "Khoa Nhật Bản học", false },
+                    { new Guid("cac54872-b2dd-41ee-8121-a5ec2fe82b21"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2666), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2666), "Viện Khoa học ứng dụng HUTECH", false },
+                    { new Guid("e40f9110-2bb6-45b1-ac6a-b3f6e1ad7f94"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2551), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2550), "Khoa Luật", false },
+                    { new Guid("ea2906c8-5258-4d57-a809-cd45c13b407d"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2598), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2597), "Khoa Hệ thống thông tin quản lý", false },
+                    { new Guid("f07f4e2d-afb1-4fa4-94d7-b9cbeef34c30"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2574), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2574), "Khoa Dược", false },
+                    { new Guid("f38d581b-7163-45a0-ab20-10e83a16cd26"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2870), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2870), "Viện Công nghệ Việt - Hàn", false },
+                    { new Guid("f9c44896-4255-4e9e-aea6-5fb957706477"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2528), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2528), "Khoa Xây dựng", false },
+                    { new Guid("fa81d0f0-8b89-46e1-baac-ff79f9f60811"), "", new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2938), new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2938), "TT Giáo dục chính trị - Quốc phòng", false }
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_NguoiDungMaNguoiDung",
                 table: "AuditLogs",
@@ -365,6 +394,12 @@ namespace BEQuestionBank.Core.Migrations
                 name: "IX_MonHoc_KhoaMaKhoa",
                 table: "MonHoc",
                 column: "KhoaMaKhoa");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MonHoc_MaSoMonHoc",
+                table: "MonHoc",
+                column: "MaSoMonHoc",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_NguoiDung_KhoaMaKhoa",

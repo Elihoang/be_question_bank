@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BEQuestionBank.Domain.Models;
 using File = BEQuestionBank.Domain.Models.File;
+using BEQuestionBank.Core.Seed;
 
 namespace BEQuestionBank.Core.Configurations;
 
@@ -26,5 +27,12 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        modelBuilder.Entity<MonHoc>()
+        .HasIndex(m => m.MaSoMonHoc)
+        .IsUnique();
+
+        KhoaSeed.Seed(modelBuilder);
+
     }
 }

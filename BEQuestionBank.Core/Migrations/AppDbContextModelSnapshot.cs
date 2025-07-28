@@ -309,6 +309,179 @@ namespace BEQuestionBank.Core.Migrations
                     b.HasKey("MaKhoa");
 
                     b.ToTable("Khoa");
+
+                    b.HasData(
+                        new
+                        {
+                            MaKhoa = new Guid("86348359-803b-425c-9015-0f33b3d66a63"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(147),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(146),
+                            TenKhoa = "Khoa Công nghệ Thông tin",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("46063d4c-4b70-45c5-b303-23265152a2d4"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2389),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2388),
+                            TenKhoa = "Khoa Tài chính - Thương mại",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("2938cbeb-53de-4f3b-9197-5c8f422c58e3"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2420),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2419),
+                            TenKhoa = "Khoa Kiến trúc - Mỹ thuật",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("13331579-a09e-4e0c-b5e7-fa9d8900f7a7"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2447),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2447),
+                            TenKhoa = "Khoa QT Du lịch - Nhà hàng - Khách sạn",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("abec0c99-965c-4ce2-b27d-ce89323bf33e"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2475),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2475),
+                            TenKhoa = "Khoa Tiếng Anh",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("c8318452-3049-4bf1-85aa-069e9582d0f5"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2502),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2502),
+                            TenKhoa = "Khoa Nhật Bản học",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("f9c44896-4255-4e9e-aea6-5fb957706477"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2528),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2528),
+                            TenKhoa = "Khoa Xây dựng",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("e40f9110-2bb6-45b1-ac6a-b3f6e1ad7f94"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2551),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2550),
+                            TenKhoa = "Khoa Luật",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("f07f4e2d-afb1-4fa4-94d7-b9cbeef34c30"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2574),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2574),
+                            TenKhoa = "Khoa Dược",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("ea2906c8-5258-4d57-a809-cd45c13b407d"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2598),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2597),
+                            TenKhoa = "Khoa Hệ thống thông tin quản lý",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("753ab298-018a-4909-85ba-52fc46e0371e"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2621),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2620),
+                            TenKhoa = "Khoa Truyền thông - Thiết kế",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("199a0115-e4d5-46ef-82dc-b017d53c807b"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2644),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2643),
+                            TenKhoa = "Viện Kỹ thuật HUTECH",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("cac54872-b2dd-41ee-8121-a5ec2fe82b21"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2666),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2666),
+                            TenKhoa = "Viện Khoa học ứng dụng HUTECH",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("48241a01-93d8-4571-9d17-94c79adb8f03"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2689),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2689),
+                            TenKhoa = "Viện Khoa học Xã hội và Nhân văn",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("53a219ab-ed94-4d87-923a-b0ee267d3cf4"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2846),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2846),
+                            TenKhoa = "Viện Đào tạo Quốc tế HUTECH",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("f38d581b-7163-45a0-ab20-10e83a16cd26"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2870),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2870),
+                            TenKhoa = "Viện Công nghệ Việt - Hàn",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("91acaf9b-6777-4ca3-86bb-4adf3d7791a2"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2893),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2893),
+                            TenKhoa = "Viện Công nghệ Việt - Nhật",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("8bfb986d-9303-42b2-a95a-1e38f5362c45"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2915),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2915),
+                            TenKhoa = "Trung tâm Tin học - Ngoại ngữ - Kỹ năng",
+                            XoaTam = false
+                        },
+                        new
+                        {
+                            MaKhoa = new Guid("fa81d0f0-8b89-46e1-baac-ff79f9f60811"),
+                            MoTa = "",
+                            NgayCapNhap = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2938),
+                            NgayTao = new DateTime(2025, 7, 27, 8, 44, 19, 455, DateTimeKind.Utc).AddTicks(2938),
+                            TenKhoa = "TT Giáo dục chính trị - Quốc phòng",
+                            XoaTam = false
+                        });
                 });
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.MonHoc", b =>
@@ -340,9 +513,16 @@ namespace BEQuestionBank.Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool?>("XoaTam")
+                        .HasColumnType("boolean")
+                        .HasColumnName("XoaTamMonHoc");
+
                     b.HasKey("MaMonHoc");
 
                     b.HasIndex("KhoaMaKhoa");
+
+                    b.HasIndex("MaSoMonHoc")
+                        .IsUnique();
 
                     b.ToTable("MonHoc");
                 });

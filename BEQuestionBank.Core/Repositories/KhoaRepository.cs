@@ -8,33 +8,9 @@ namespace BEQuestionBank.Core.Repositories;
 
 public class KhoaRepository(AppDbContext context) : GenericRepository<Khoa>(context), IKhoaRepository
 {
-    public new async Task<Khoa> GetByIdAsync(string id)
+    private new readonly AppDbContext _context = context;
+    public async Task<Khoa?> GetByTenKhoaAsync(string tenKhoa)
     {
-        return await _context.Khoas.FindAsync(id);
-    }
-
-    public async Task<IEnumerable<Khoa>> GetAllAsync()
-    {
-        return await _context.Khoas.ToListAsync();
-    }
-
-    public async Task<IEnumerable<Khoa>> FindAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _context.Khoas.Where(predicate).ToListAsync();
-    }
-
-    public async Task<Khoa> FirstOrDefaultAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _context.Khoas.FirstOrDefaultAsync(predicate);
-    }
-
-    public async Task<bool> ExistsAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _context.Khoas.AnyAsync(predicate);
-    }
-
-    public async Task<Khoa> GetByTenKhoaAsync(string tenKhoa)
-    {
-        return await _context.Khoas.SingleOrDefaultAsync(k => k.TenKhoa == tenKhoa);
+        return await _context.Khoas.FirstOrDefaultAsync(k => k.TenKhoa == tenKhoa);
     }
 }
