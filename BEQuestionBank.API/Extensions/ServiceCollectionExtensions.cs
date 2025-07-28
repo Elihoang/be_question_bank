@@ -1,7 +1,10 @@
+using BEQuestionBank.Application.Services;
 using BEQuestionBank.Core.Repositories;
 using BEQuestionBank.Core.Services;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
+using BEQuestionBank.Domain.Models;
+using BEQuestionBank.Infrastructure.Repositories;
 
 namespace BEQuestionBank.API.Extensions;
 
@@ -11,12 +14,21 @@ public static class ServiceCollectionExtensions
     {
         // Generic
         services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
-        services.AddScoped(typeof(IService<>), typeof(GenericService<>));
+        services.AddScoped<IService<Khoa>, KhoaService>();
+        services.AddScoped<IService<CauHoi>, CauHoiService>();
+        services.AddScoped<IService<Phan>, PhanService>();
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
         services.AddScoped<IKhoaService, KhoaService>();
+        
+        // CauHoi
+        services.AddScoped<ICauHoiRepository, CauHoiRepository>();
+        services.AddScoped<ICauHoiService, CauHoiService>();
 
+        //Phan
+        services.AddScoped<IPhanRepository, PhanRepository>();
+        services.AddScoped<IPhanService, PhanService>();
         // Nếu dùng KhoaService<Khoa>: (không khuyến khích unless cần)
         // services.AddScoped<IKhoaService<Khoa>, KhoaService<Khoa>>();
 

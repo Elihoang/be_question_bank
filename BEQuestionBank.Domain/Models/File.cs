@@ -7,7 +7,8 @@ namespace BEQuestionBank.Domain.Models;
 public class File
 {
     [Key] 
-    public Guid MaFile { get; set; }
+    public Guid MaFile { get; set; } = Guid.NewGuid();
+    [ForeignKey("CauHoi")]
     public Guid? MaCauHoi { get; set; }
     public string? TenFile { get; set; }
     public int? LoaiFile { get; set; }

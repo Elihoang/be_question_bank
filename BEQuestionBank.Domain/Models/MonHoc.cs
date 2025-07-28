@@ -8,15 +8,15 @@ namespace BEQuestionBank.Domain.Models;
 public class MonHoc : ModelBase
 {
     [Key]
-    public Guid MaMonHoc { get; set; }
+    public Guid MaMonHoc { get; set; } = Guid.NewGuid();
     public string TenMonHoc { get; set; } = string.Empty;
     public string MaSoMonHoc { get; set; } = string.Empty;
     public int? SoTinChi { get; set; }
     [Column("XoaTamMonHoc")]
     public bool? XoaTam { get; set; } = false;
+    [ForeignKey("Khoa")]
     public Guid MaKhoa { get; set; }
-    public Khoa? Khoa { get; set; }
-
+    public virtual Khoa? Khoa { get; set; }
     // Navigation
     public ICollection<Phan> DanhSachPhan { get; set; } = new List<Phan>();
 }

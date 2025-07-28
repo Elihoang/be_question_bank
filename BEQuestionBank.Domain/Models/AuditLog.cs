@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BEQuestionBank.Domain.Models;
 
@@ -11,6 +12,7 @@ public class AuditLog
     public string HanhDong { get; set; } = string.Empty;
     public string? GiaTriCu { get; set; }
     public string? GiaTriMoi { get; set; }
+    [ForeignKey("NguoiDung")]
     public Guid? MaNguoiDung { get; set; }
     public string? TenNguoiDung { get; set; }
     public DateTime ThoiGianThucHien { get; set; } = DateTime.Now;

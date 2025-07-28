@@ -31,8 +31,8 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<MonHoc>()
         .HasIndex(m => m.MaSoMonHoc)
         .IsUnique();
-
-        KhoaSeed.Seed(modelBuilder);
+        
+        // KhoaSeed.Seed(modelBuilder);
 
     }
 }

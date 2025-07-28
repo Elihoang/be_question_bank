@@ -1,6 +1,6 @@
 namespace BEQuestionBank.Domain.Enums;
 
-public enum CLO
+public enum EnumCLO
 {
     CLO1 = 1,
     CLO2 = 2,

@@ -9,21 +9,24 @@ namespace BEQuestionBank.Domain.Models;
 public class CauHoi : ModelBase
 {
     [Key] 
-    public Guid MaCauHoi { get; set; }
+    public Guid MaCauHoi { get; set; } = Guid.NewGuid();
+    [ForeignKey("Phan")]
     public Guid MaPhan { get; set; }
     public int MaSoCauHoi { get; set; }
     public string? NoiDung { get; set; }
     public bool HoanVi { get; set; }
     public short CapDo { get; set; }
     public int SoCauHoiCon { get; set; }
-    public String? MaCauHoiCha { get; set; }
+    public Guid? MaCauHoiCha { get; set; }
     public bool TrangThai { get; set; } = false;
-    public int SoLanDuocThi { get; set; } = 0;
-    public int SoLanDung { get; set; } = 0;
+    public int? SoLanDuocThi { get; set; } = 0;
+    public int? SoLanDung { get; set; } = 0;
     [Column("DoPhanCachCauHoi")]
     public float? DoPhanCach { get; set; }
-    public CLO? ChuanDauRa { get; set; }
+    public bool? XoaTam { get; set; } = false;
+    public EnumCLO? CLO { get; set; }
     public DateTime? NgaySua { get; set; }
+    [ForeignKey("NguoiDung")]
     public Guid? NguoiTao { get; set; }
 
     public virtual Phan Phan { get; set; }
