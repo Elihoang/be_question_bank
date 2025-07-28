@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
@@ -87,6 +88,27 @@ namespace BEQuestionBank.Application.Services
         public Task<IEnumerable<object>> GetAllWithAnswersAsync()
         {
             throw new NotImplementedException();
+        }
+        public Task<IEnumerable<CauHoi>> GetByCLoAsync(EnumCLO maCLo)
+        {
+            return _repository.GetByCLoAsync(maCLo);
+        }
+
+        public Task<IEnumerable<CauHoi>> GetByMaCauHoiChasync(Guid maCHCha)
+        {
+           return _repository.GetByMaCauHoiChasync(maCHCha);
+        }
+        public Task<IEnumerable<CauHoi>> GetByMaPhanAsync(Guid maPhan)
+        {
+            return _repository.GetByMaPhanAsync(maPhan);
+        }
+        public Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
+        {
+            return _repository.GetByMaMonHocAsync(maMonHoc);
+        }
+        public Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi)
+        {
+            return _repository.GetByMaDeThiAsync(maDeThi);
         }
     }
 }

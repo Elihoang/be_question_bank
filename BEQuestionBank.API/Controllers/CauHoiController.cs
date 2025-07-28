@@ -1,95 +1,86 @@
-using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Swashbuckle.AspNetCore.Annotations;
-using BEQuestionBank.Application.Services;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs.CauHoi;
-using BEQuestionBank.Shared.DTOs.CauTraLoi;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using BEQuestionBank.Domain.Enums;
 
-namespace BEQuestionBank.Api.Controllers
+namespace BEQuestionBank.API.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class CauHoiController : ControllerBase
     {
-        private readonly ICauHoiService _cauHoiService;
+        private readonly ICauHoiService _service;
         private readonly ILogger<CauHoiController> _logger;
 
-        public CauHoiController(ICauHoiService cauHoiService, ILogger<CauHoiController> logger)
+        public CauHoiController(ICauHoiService service, ILogger<CauHoiController> logger)
         {
-            _cauHoiService = cauHoiService;
+            _service = service;
             _logger = logger;
         }
 
+        // GET: api/CauHoi
         [HttpGet]
-        [SwaggerOperation(Summary = "Lấy danh sách tất cả câu hỏi")]
-        public async Task<ActionResult> GetAllCauHois()
+        [SwaggerOperation("Lấy danh sách tất cả câu hỏi")]
+        public async Task<IEnumerable<CauHoi>> GetAllAsync()
         {
-            try
-            {
-                var cauHois = await _cauHoiService.GetAllAsync();
-                _logger.LogInformation("Lấy danh sách câu hỏi thành công. Số lượng: {Count}", cauHois.Count());
-                return Ok(new { Message = "Lấy danh sách câu hỏi thành công", Data = cauHois });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi: {Message}", ex.Message);
-                return StatusCode(500, new { Message = $"Lỗi khi lấy danh sách câu hỏi: {ex.Message}", Data = (IEnumerable<CauHoiDto>)null });
-            }
+            return await _service.GetAllAsync();
         }
 
+        // GET: api/CauHoi/{id}
         [HttpGet("{id}")]
-        [SwaggerOperation(Summary = "Lấy thông tin câu hỏi theo ID")]
-        public async Task<ActionResult> GetCauHoiById(string id)
+        [SwaggerOperation("Lấy câu hỏi theo ID")]
+        public async Task<ActionResult<CauHoiDto>> GetByIdAsync(string id)
         {
             try
             {
-                if (!Guid.TryParse(id, out _))
+                if (!Guid.TryParse(id, out var guidId))
                 {
-                    _logger.LogError("ID câu hỏi không đúng định dạng GUID: {Id}", id);
-                    return BadRequest(new { Message = "ID câu hỏi không đúng định dạng GUID.", Data = (CauHoiDto)null });
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
                 }
 
-                var cauHoi = await _cauHoiService.GetByIdAsync(Guid.Parse(id));
+                var cauHoi = await _service.GetByIdAsync(guidId);
                 if (cauHoi == null)
                 {
-                    _logger.LogError("Không tìm thấy câu hỏi với ID: {Id}", id);
-                    return NotFound(new { Message = $"Không tìm thấy câu hỏi với ID '{id}'.", Data = (CauHoiDto)null });
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi với ID: {id}");
                 }
 
-                _logger.LogInformation("Lấy thông tin câu hỏi thành công với ID: {Id}", id);
-                return Ok(new { Message = $"Lấy thông tin câu hỏi với ID '{id}' thành công", Data = cauHoi });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogError(ex, "Lỗi tham số khi lấy câu hỏi với ID {Id}: {Message}", id, ex.Message);
-                return BadRequest(new { Message = ex.Message, Data = (CauHoiDto)null });
+                return StatusCode(StatusCodes.Status200OK, cauHoi);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy câu hỏi với ID {Id}: {Message}", id, ex.Message);
-                return StatusCode(500, new { Message = $"Lỗi khi lấy câu hỏi: {ex.Message}", Data = (CauHoiDto)null });
+                _logger.LogError(ex, "Lỗi khi lấy câu hỏi theo ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
             }
         }
 
+        // POST: api/CauHoi
         [HttpPost]
-        [SwaggerOperation(Summary = "Tạo một câu hỏi mới")]
-        public async Task<ActionResult> CreateCauHoi([FromBody] CreateCauHoiDto cauHoiDto)
+        [SwaggerOperation("Thêm mới câu hỏi")]
+        public async Task<ActionResult<CauHoiDto>> CreateAsync([FromBody] CreateCauHoiDto cauHoiDto)
         {
+            if (cauHoiDto == null)
+            {
+                _logger.LogError("Yêu cầu thêm câu hỏi không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, "Yêu cầu không hợp lệ.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Dữ liệu đầu vào không hợp lệ: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    _logger.LogError("Dữ liệu đầu vào không hợp lệ khi tạo câu hỏi.");
-                    return BadRequest(new { Message = "Dữ liệu đầu vào không hợp lệ.", Data = (CauHoiDto)null });
-                }
-                
-                var newCauHoi = new CauHoi
+                var cauHoi = new CauHoi
                 {
                     MaPhan = cauHoiDto.MaPhan,
                     MaSoCauHoi = cauHoiDto.MaSoCauHoi,
@@ -99,55 +90,303 @@ namespace BEQuestionBank.Api.Controllers
                     SoCauHoiCon = cauHoiDto.SoCauHoiCon,
                     DoPhanCach = cauHoiDto.DoPhanCach,
                     MaCauHoiCha = cauHoiDto.MaCauHoiCha,
-                    XoaTam = cauHoiDto.XoaTam,
+                    XoaTam = cauHoiDto.XoaTam ?? false,
                     SoLanDuocThi = cauHoiDto.SoLanDuocThi,
                     SoLanDung = cauHoiDto.SoLanDung,
-                    NgayTao = DateTime.UtcNow,
-                    NgaySua = DateTime.UtcNow,
                     CLO = cauHoiDto.CLO
                 };
-                await _cauHoiService.AddAsync(newCauHoi);
-                return StatusCode(StatusCodes.Status201Created, new { Message = "Tạo câu hỏi thành công", Data = MapToCauHoiDto(newCauHoi) });
+
+                await _service.AddAsync(cauHoi);
+                _logger.LogInformation("Thêm mới câu hỏi thành công với MaSoCauHoi: {MaSoCauHoi}", cauHoiDto.MaSoCauHoi);
+                return StatusCode(StatusCodes.Status201Created,
+                    new { Message = "Thêm mới câu hỏi thành công", Data = cauHoi });
             }
             catch (Exception ex)
             {
-                _logger.LogError("Lỗi khi tạo câu hỏi: {Message}", ex.Message);
-                return StatusCode(500, new { Message = $"Lỗi khi tạo câu hỏi: {ex.Message}"});
+                _logger.LogError(ex, "Lỗi khi thêm mới câu hỏi.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi thêm mới câu hỏi.");
             }
         }
 
-       
-       
-        
-        private static CauHoiDto MapToCauHoiDto(CauHoi cauHoi)
+        // PUT: api/CauHoi/{id}
+        [HttpPatch("{id}")]
+        [SwaggerOperation("Cập nhật câu hỏi theo ID")]
+        public async Task<ActionResult<CauHoiDto>> UpdateAsync(string id, [FromBody] UpdateCauHoiDto cauHoiDto)
         {
-            return new CauHoiDto
+            if (cauHoiDto == null)
             {
-                MaCauHoi = cauHoi.MaCauHoi,
-                MaPhan = cauHoi.MaPhan,
-                MaSoCauHoi = cauHoi.MaSoCauHoi,
-                NoiDung = cauHoi.NoiDung,
-                HoanVi = cauHoi.HoanVi,
-                CapDo = cauHoi.CapDo,
-                SoCauHoiCon = cauHoi.SoCauHoiCon,
-                DoPhanCach = cauHoi.DoPhanCach,
-                MaCauHoiCha = cauHoi.MaCauHoiCha,
-                XoaTam = cauHoi.XoaTam,
-                SoLanDuocThi = cauHoi.SoLanDuocThi,
-                SoLanDung = cauHoi.SoLanDung,
-                NgayTao = cauHoi.NgayTao,
-                NgaySua = cauHoi.NgaySua,
-                CLO = cauHoi.CLO,
-                CauTraLois = cauHoi.CauTraLois?.Select(ctl => new CauTraLoiDto
+                _logger.LogError("Yêu cầu cập nhật câu hỏi không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, "Yêu cầu không hợp lệ.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Dữ liệu đầu vào không hợp lệ: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
                 {
-                    MaCauTraLoi = ctl.MaCauTraLoi,
-                    MaCauHoi = ctl.MaCauHoi,
-                    NoiDung = ctl.NoiDung,
-                    ThuTu = ctl.ThuTu,
-                    LaDapAn = ctl.LaDapAn,
-                    HoanVi = ctl.HoanVi
-                }).ToList() ?? new List<CauTraLoiDto>()
-            };
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return BadRequest("ID câu hỏi không hợp lệ.");
+                }
+
+                var existingCauHoi = await _service.GetByIdAsync(guidId);
+                if (existingCauHoi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return NotFound($"Không tìm thấy câu hỏi với ID: {id}");
+                }
+
+                existingCauHoi.MaPhan = cauHoiDto.MaPhan;
+                existingCauHoi.MaSoCauHoi = cauHoiDto.MaSoCauHoi;
+                existingCauHoi.NoiDung = cauHoiDto.NoiDung;
+                existingCauHoi.HoanVi = cauHoiDto.HoanVi;
+                existingCauHoi.CapDo = cauHoiDto.CapDo;
+                existingCauHoi.SoCauHoiCon = cauHoiDto.SoCauHoiCon;
+                existingCauHoi.DoPhanCach = cauHoiDto.DoPhanCach;
+                existingCauHoi.MaCauHoiCha = cauHoiDto.MaCauHoiCha;
+                existingCauHoi.XoaTam = cauHoiDto.XoaTam ?? existingCauHoi.XoaTam;
+                existingCauHoi.SoLanDuocThi = cauHoiDto.SoLanDuocThi;
+                existingCauHoi.SoLanDung = cauHoiDto.SoLanDung;
+                existingCauHoi.CLO = cauHoiDto.CLO;
+                existingCauHoi.NgaySua = DateTime.UtcNow;
+
+                 await _service.UpdateAsync(existingCauHoi);
+                _logger.LogInformation("Cập nhật câu hỏi thành công với ID: {Id}, MaSoCauHoi: {MaSoCauHoi}", id, cauHoiDto.MaSoCauHoi);
+                return StatusCode(StatusCodes.Status200OK,
+                    new { Message = "Cập nhật câu hỏi thành công", Data = existingCauHoi  });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật câu hỏi với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi cập nhật câu hỏi.");
+            }
         }
+
+        // PATCH: api/CauHoi/{id}/XoaTam
+        [HttpPatch("{id}/XoaTam")]
+        [SwaggerOperation(Summary = "Xóa câu hỏi tạm thời")]
+        public async Task<IActionResult> SoftDelete(string id)
+        {
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
+                }
+
+                var existingCauHoi = await _service.GetByIdAsync(guidId);
+                if (existingCauHoi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi với mã {id}");
+                }
+
+                existingCauHoi.XoaTam = true;
+                await _service.UpdateAsync(existingCauHoi);
+                _logger.LogInformation("Xóa tạm câu hỏi thành công với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status200OK, $"Đã xóa tạm câu hỏi với mã số {existingCauHoi.MaCauHoi} thành công");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa tạm câu hỏi với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xóa tạm câu hỏi.");
+            }
+        }
+
+        // PATCH: api/CauHoi/{id}/KhoiPhuc
+        [HttpPatch("{id}/KhoiPhuc")]
+        [SwaggerOperation(Summary = "Khôi phục câu hỏi đã xóa tạm")]
+        public async Task<IActionResult> Restore(string id)
+        {
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
+                }
+
+                var existingCauHoi = await _service.GetByIdAsync(guidId);
+                if (existingCauHoi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi với mã {id}");
+                }
+
+                existingCauHoi.XoaTam = false;
+                await _service.UpdateAsync(existingCauHoi);
+                _logger.LogInformation("Khôi phục câu hỏi thành công với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status200OK, $"Đã khôi phục câu hỏi với mã số {existingCauHoi.MaCauHoi} thành công");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi khôi phục câu hỏi với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi khôi phục câu hỏi.");
+            }
+        }
+
+        // DELETE: api/CauHoi/{id}
+        [HttpDelete("{id}")]
+        [SwaggerOperation("Xóa câu hỏi theo ID")]
+        public async Task<ActionResult> DeleteAsync(string id)
+        {
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
+                }
+
+                var cauHoi = await _service.GetByIdAsync(guidId);
+                if (cauHoi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi với ID: {id}");
+                }
+
+                await _service.DeleteAsync(cauHoi);
+                _logger.LogInformation("Xóa câu hỏi thành công với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status200OK, new { Message = "Xóa câu hỏi thành công" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa câu hỏi với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xóa câu hỏi.");
+            }
+        }
+        
+        // GET: api/CauHoi/CLO/{maCLo}
+        [HttpGet("CLO/{maCLo}")]
+        [SwaggerOperation("Lấy danh sách câu hỏi theo mã CLO")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetByCLoAsync(EnumCLO maCLo)
+        {
+            try
+            {
+                if (!Enum.IsDefined(typeof(EnumCLO), maCLo))
+                {
+                    _logger.LogWarning("Mã CLO không hợp lệ: {maCLo}", maCLo);
+                    return StatusCode(StatusCodes.Status400BadRequest,"Mã CLO không hợp lệ.");
+                }
+                
+                var cauHois = await _service.GetByCLoAsync(maCLo);
+
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào với mã CLO: {maCLo}", maCLo);
+                    return StatusCode(StatusCodes.Status404NotFound,$"Không tìm thấy câu hỏi nào với mã CLO: {maCLo}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu hỏi thành công với mã CLO: {maCLo}", maCLo);
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi theo mã CLO: {maCLo}", maCLo);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+        // GET: api/CauHoi/Phan/{maPhan}
+        [HttpGet("Phan/{maPhan}")]
+        [SwaggerOperation("Lấy danh sách câu hỏi theo mã phần")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetByMaPhanAsync(Guid maPhan)
+        {
+            try
+            {
+                var cauHois = await _service.GetByMaPhanAsync(maPhan);
+
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào với mã phần: {maPhan}", maPhan);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi nào với mã phần: {maPhan}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu hỏi thành công với mã phần: {maPhan}", maPhan);
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi theo mã phần: {maPhan}", maPhan);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+        // GET: api/CauHoi/MonHoc/{maMonHoc}
+        [HttpGet("MonHoc/{maMonHoc}")]
+        [SwaggerOperation("Lấy danh sách câu hỏi theo mã môn học")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetByMaMonHocAsync(Guid maMonHoc)
+        {
+            try
+            {
+                var cauHois = await _service.GetByMaMonHocAsync(maMonHoc);
+
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào với mã môn học: {maMonHoc}", maMonHoc);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi nào với mã môn học: {maMonHoc}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu hỏi thành công với mã môn học: {maMonHoc}", maMonHoc);
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi theo mã môn học: {maMonHoc}", maMonHoc);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+        // GET: api/CauHoi/DeThi/{maDeThi}
+        [HttpGet("DeThi/{maDeThi}")]
+        [SwaggerOperation("Lấy danh sách câu hỏi theo mã đề thi")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetByMaDeThiAsync(Guid maDeThi)
+        {
+            try
+            {
+                var cauHois = await _service.GetByMaDeThiAsync(maDeThi);
+
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào với mã đề thi: {maDeThi}", maDeThi);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi nào với mã đề thi: {maDeThi}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu hỏi thành công với mã đề thi: {maDeThi}", maDeThi);
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi theo mã đề thi: {maDeThi}", maDeThi);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+        // GET: api/CauHoi/CauHoiCha/{maCHCha}
+        [HttpGet("CauHoiCha/{maCHCha}")]
+        [SwaggerOperation("Lấy danh sách câu hỏi con theo mã câu hỏi cha")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetByMaCauHoiChaAsync(Guid maCHCha)
+        {
+            try
+            {
+                var cauHois = await _service.GetByMaCauHoiChasync(maCHCha);
+
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào với mã câu hỏi cha: {maCHCha}", maCHCha);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi nào với mã câu hỏi cha: {maCHCha}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu hỏi thành công với mã câu hỏi cha: {maCHCha}", maCHCha);
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi theo mã câu hỏi cha: {maCHCha}", maCHCha);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+        
     }
 }

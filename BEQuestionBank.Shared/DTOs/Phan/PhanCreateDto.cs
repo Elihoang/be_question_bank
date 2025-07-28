@@ -24,5 +24,7 @@ namespace BEQuestionBank.Shared.DTOs
         public Guid? MaPhanCha { get; set; }
 
         public bool LaCauHoiNhom { get; set; } = false;
+        
+        public bool XoaTam { get; set; } = false;
     }
 }
