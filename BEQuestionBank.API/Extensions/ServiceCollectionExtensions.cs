@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IService<CauHoi>, CauHoiService>();
         services.AddScoped<IService<Phan>, PhanService>();
         services.AddScoped<IService<MonHoc>, MonHocService>();
+        services.AddScoped<IService<CauTraLoi>, CauTraLoiService>();
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
@@ -30,6 +31,10 @@ public static class ServiceCollectionExtensions
         // CauHoi
         services.AddScoped<ICauHoiRepository, CauHoiRepository>();
         services.AddScoped<ICauHoiService, CauHoiService>();
+
+        // CauTraLoi
+        services.AddScoped<ICauTraLoiRepository, CauTraLoiRepository>();
+        services.AddScoped<ICauTraLoiService, CauTraLoiService>();
 
         //Phan
         services.AddScoped<IPhanRepository, PhanRepository>();

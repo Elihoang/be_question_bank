@@ -3,16 +3,16 @@ using BEQuestionBank.Core.Repositories;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace BEQuestionBank.Application.Services;
 
-    public class CauTraLoiRepository : GenericRepository<CauTraLoi>, ICauTraLoiRepository
+    public class CauTraLoiRepository(AppDbContext context) : GenericRepository<CauTraLoi>(context), ICauTraLoiRepository
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext _context = context;
 
-        public CauTraLoiRepository(AppDbContext context) 
-            : base(context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+    public async Task<IEnumerable<CauTraLoi>> GetByMaCauHoi(Guid maCauHoi)
+    {
+        return await _context.CauTraLois.Where( cTL => cTL.MaCauHoi == maCauHoi).ToListAsync();
     }
+}
