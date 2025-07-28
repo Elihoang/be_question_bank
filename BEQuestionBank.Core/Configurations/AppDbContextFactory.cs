@@ -18,11 +18,11 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         
         // Lấy connection string từ appsettings.json
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("PostgresConnection");
         
         if (string.IsNullOrEmpty(connectionString))
         {
-            throw new InvalidOperationException("Connection string 'DefaultConnection' not found in appsettings.json");
+            throw new InvalidOperationException("Connection string 'PostgresConnection' not found in appsettings.json");
         }
 
         optionsBuilder.UseNpgsql(connectionString);

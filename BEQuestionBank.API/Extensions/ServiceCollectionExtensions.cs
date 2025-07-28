@@ -1,9 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using BEQuestionBank.Core.Repositories;
 using BEQuestionBank.Core.Services;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
-using BEQuestionBank.Domain.Models;
 
 namespace BEQuestionBank.API.Extensions;
 

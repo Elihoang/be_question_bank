@@ -1,6 +1,7 @@
 using BEQuestionBank.Core.Configurations;
 using Microsoft.EntityFrameworkCore;
 using BEQuestionBank.API.Extensions;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,10 @@ builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
 
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("PostgresConnection"),
+        x => x.MigrationsAssembly("BEQuestionBank.Core") // 👈 Thêm dòng này
+    ));
 
 // Cấu hình CORS
 builder.Services.AddCors(options =>
@@ -26,6 +30,11 @@ builder.Services.AddCors(options =>
         });
 });
 
+// Cấu hình Log
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .CreateLogger();
+builder.Host.UseSerilog();
 
 // Gọi extension từ Core
 builder.Services.AddCoreServices();

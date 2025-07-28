@@ -1,100 +1,31 @@
-using System.Linq.Expressions;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
-using BEQuestionBank.Shared.Helpers;
-using BEQuestionBank.Shared.Logging;
+using System.Linq.Expressions;
 
 namespace BEQuestionBank.Core.Services;
 
-public class KhoaService : IKhoaService
+public class KhoaService(IKhoaRepository khoaRepository) : IKhoaService
 {
-    private readonly IKhoaRepository _repository;
+    public Task<Khoa> GetByIdAsync(Guid id) => khoaRepository.GetByIdAsync(id);
 
-    public KhoaService(IKhoaRepository repository)
-    {
-        _repository = repository;
-    }
+    public Task<IEnumerable<Khoa>> GetAllAsync() => khoaRepository.GetAllAsync();
 
-    public async Task<Khoa> GetByIdAsync(string id)
-    {
-        return await _repository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Khoa with id {id} not found");
-    }
+    public Task<IEnumerable<Khoa>> FindAsync(Expression<Func<Khoa, bool>> predicate) =>
+        khoaRepository.FindAsync(predicate);
 
-    public async Task<IEnumerable<Khoa>> GetAllAsync()
-    {
-        return await _repository.GetAllAsync();
-    }
+    public Task<Khoa> FirstOrDefaultAsync(Expression<Func<Khoa, bool>> predicate) =>
+        khoaRepository.FirstOrDefaultAsync(predicate);
 
-    public async Task<IEnumerable<Khoa>> FindAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _repository.FindAsync(predicate);
-    }
+    public Task AddAsync(Khoa entity) => khoaRepository.AddAsync(entity);
 
-    public async Task<Khoa> FirstOrDefaultAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _repository.FirstOrDefaultAsync(predicate);
-    }
+    public Task UpdateAsync(Khoa entity) => khoaRepository.UpdateAsync(entity);
 
-    public async Task AddAsync(Khoa model)
-    {
-        if (model == null)
-            throw new ArgumentNullException(nameof(model));
+    public Task DeleteAsync(Khoa entity) => khoaRepository.DeleteAsync(entity);
 
-        if (string.IsNullOrWhiteSpace(model.TenKhoa))
-            throw new ArgumentException("Tên Khoa là bắt buộc.", nameof(model.TenKhoa));
+    public Task<bool> ExistsAsync(Expression<Func<Khoa, bool>> predicate) =>
+        khoaRepository.ExistsAsync(predicate);
 
-        if (string.IsNullOrWhiteSpace(model.MaKhoa))
-        {
-            string newId;
-            do
-            {
-                newId = CodeGenerator.GenerateKhoaCode();
-            }
-            while (await _repository.ExistsAsync(k => k.MaKhoa == newId));
-            model.MaKhoa = newId;
-        }
-
-        await _repository.AddAsync(model);
-    }
-
-    public async Task AddRangeAsync(IEnumerable<Khoa> entities)
-    {
-        await _repository.AddRangeAsync(entities);
-    }
-
-    public async Task UpdateAsync(Khoa entity)
-    {
-        await _repository.UpdateAsync(entity);
-    }
-
-    public async Task UpdateRangeAsync(IEnumerable<Khoa> entities)
-    {
-        await _repository.UpdateRangeAsync(entities);
-    }
-
-    public async Task DeleteAsync(Khoa entity)
-    {
-        await _repository.DeleteAsync(entity);
-    }
-
-    public async Task DeleteRangeAsync(IEnumerable<Khoa> entities)
-    {
-        await _repository.DeleteRangeAsync(entities);
-    }
-
-    public async Task<bool> ExistsAsync(Expression<Func<Khoa, bool>> predicate)
-    {
-        return await _repository.ExistsAsync(predicate);
-    }
-
-    public async Task<int> CountAsync(Expression<Func<Khoa, bool>> predicate = null)
-    {
-        return await _repository.CountAsync(predicate);
-    }
-
-    public async Task<Khoa> GetByTenKhoaAsync(string tenKhoa)
-    {
-        return await _repository.GetByTenKhoaAsync(tenKhoa);
-    }
+    public Task<Khoa> GetByTenKhoaAsync(string tenKhoa) =>
+        khoaRepository.GetByTenKhoaAsync(tenKhoa);
 }
