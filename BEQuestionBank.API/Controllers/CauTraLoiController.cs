@@ -63,10 +63,20 @@ namespace BEQuestionBank.API.Controllers
         {
             try
             {
-                var existingCauHoi = await _cauHoiService.ExistsAsync( cH => cH.MaCauHoi == model.MaCauHoi);
-                if(!existingCauHoi)
+                var existingCauHoi = await _cauHoiService.ExistsAsync(cH => cH.MaCauHoi == model.MaCauHoi);
+                if (!existingCauHoi)
                 {
                     return StatusCode(StatusCodes.Status404NotFound, "Không tìm thấy Mã Câu Hỏi");
+                }
+
+                // Nếu câu trả lời mới có LaDapAn = true, kiểm tra xem đã có câu trả lời đúng nào chưa
+                if (model.LaDapAn)
+                {
+                    var answers = await _service.GetByMaCauHoi(model.MaCauHoi);
+                    if (answers.Any(a => a.LaDapAn))
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, "Câu hỏi đã có một câu trả lời đúng. Chỉ được phép có một câu trả lời đúng.");
+                    }
                 }
 
                 var cauTraLoi = new CauTraLoi
@@ -79,11 +89,11 @@ namespace BEQuestionBank.API.Controllers
                 };
 
                 await _service.AddAsync(cauTraLoi);
-                return StatusCode(StatusCodes.Status201Created, model);
+                return StatusCode(StatusCodes.Status201Created, cauTraLoi);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi thêm Câu Hỏi");
+                _logger.LogError(ex, "Lỗi khi thêm câu trả lời");
                 return StatusCode(StatusCodes.Status500InternalServerError, "Lỗi máy chủ");
             }
         }
@@ -92,18 +102,35 @@ namespace BEQuestionBank.API.Controllers
         [SwaggerOperation("Cập nhật thông tin Câu Trả Lời")]
         public async Task<IActionResult> UpdateAsync(string id, [FromBody] UpdateCauTraLoiDto model)
         {
-            var cautraLoi = await _service.GetByIdAsync(Guid.Parse(id));
-            if (cautraLoi == null)
-                return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy Câu Trả Lời với mã {id}");
+            try
+            {
+                var cauTraLoi = await _service.GetByIdAsync(Guid.Parse(id));
+                if (cauTraLoi == null)
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu trả lời với mã {id}");
 
-            cautraLoi.NoiDung = model.NoiDung;
-            cautraLoi.ThuTu = model.ThuTu;
-            cautraLoi.LaDapAn = model.LaDapAn;
-            cautraLoi.HoanVi = model.HoanVi;
+                // Nếu cập nhật LaDapAn thành true, kiểm tra xem đã có câu trả lời đúng nào khác chưa
+                if (model.LaDapAn && !cauTraLoi.LaDapAn)
+                {
+                    var answers = await _service.GetByMaCauHoi(cauTraLoi.MaCauHoi);
+                    if (answers.Any(a => a.LaDapAn && a.MaCauTraLoi != cauTraLoi.MaCauTraLoi))
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, "Câu hỏi đã có một câu trả lời đúng. Chỉ được phép có một câu trả lời đúng.");
+                    }
+                }
 
-            await _service.UpdateAsync(cautraLoi);
+                cauTraLoi.NoiDung = model.NoiDung;
+                cauTraLoi.ThuTu = model.ThuTu;
+                cauTraLoi.LaDapAn = model.LaDapAn;
+                cauTraLoi.HoanVi = model.HoanVi;
 
-            return StatusCode(StatusCodes.Status200OK, cautraLoi);
+                await _service.UpdateAsync(cauTraLoi);
+                return StatusCode(StatusCodes.Status200OK, cauTraLoi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật câu trả lời");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Lỗi máy chủ");
+            }
         }
 
         [HttpDelete("{id}")]

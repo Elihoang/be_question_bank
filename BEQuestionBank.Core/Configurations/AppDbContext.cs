@@ -33,6 +33,12 @@ public class AppDbContext : DbContext
         .IsUnique();
         
         // KhoaSeed.Seed(modelBuilder);
+        modelBuilder.Entity<CauHoi>()
+            .HasOne(c => c.CauHoiCha)
+            .WithMany(c => c.CauHoiCons)
+            .HasForeignKey(c => c.MaCauHoiCha)
+            .OnDelete(DeleteBehavior.Restrict);
 
+        
     }
 }

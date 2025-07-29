@@ -18,5 +18,5 @@ public class MonHoc : ModelBase
     public Guid MaKhoa { get; set; }
     public virtual Khoa? Khoa { get; set; }
     // Navigation
-    public ICollection<Phan> DanhSachPhan { get; set; } = new List<Phan>();
+    public ICollection<Phan> Phans { get; set; } = new List<Phan>();
 }
