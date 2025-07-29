@@ -31,7 +31,58 @@ namespace BEQuestionBank.API.Controllers
         {
             return await _service.GetAllAsync();
         }
+        [HttpGet("WithAnswers")]
+        [SwaggerOperation(Summary = "Lấy danh sách tất cả câu hỏi kèm câu trả lời")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetAllWithAnswersAsync()
+        {
+            try
+            {
+                var cauHois = await _service.GetAllWithAnswersAsync();
+                if (cauHois == null || !cauHois.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi nào kèm câu trả lời.");
+                    return StatusCode(StatusCodes.Status404NotFound, "Không tìm thấy câu hỏi nào.");
+                }
 
+                _logger.LogInformation("Lấy danh sách câu hỏi kèm câu trả lời thành công.");
+                return StatusCode(StatusCodes.Status200OK, cauHois);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu hỏi kèm câu trả lời.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+
+        // GET: api/CauHoi/{id}/WithAnswers
+        [HttpGet("{id}/WithAnswers")]
+        [SwaggerOperation(Summary = "Lấy câu hỏi kèm câu trả lời theo ID")]
+        public async Task<ActionResult<CauHoiDto>> GetByIdWithAnswersAsync(string id)
+        {
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
+                }
+
+                var cauHoi = await _service.GetByIdWithAnswersAsync(guidId);
+                if (cauHoi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy câu hỏi với ID: {Id}", id);
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy câu hỏi với ID: {id}");
+                }
+
+                _logger.LogInformation("Lấy câu hỏi kèm câu trả lời thành công với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status200OK, cauHoi);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy câu hỏi kèm câu trả lời với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
         // GET: api/CauHoi/{id}
         [HttpGet("{id}")]
         [SwaggerOperation("Lấy câu hỏi theo ID")]
@@ -388,5 +439,21 @@ namespace BEQuestionBank.API.Controllers
             }
         }
         
+        [HttpGet("Groups")]
+        [SwaggerOperation(Summary = "Lấy tất cả các nhóm câu hỏi (câu hỏi cha và câu hỏi con)")]
+        public async Task<ActionResult<IEnumerable<CauHoiDto>>> GetAllGroupsAsync()
+        {
+            try
+            {
+                var cauHoiGroups = await _service.GetAllGroupsAsync();
+                _logger.LogInformation("Lấy danh sách tất cả nhóm câu hỏi thành công. Số lượng: {Count}", cauHoiGroups?.Count() ?? 0);
+                return StatusCode(StatusCodes.Status200OK, cauHoiGroups ?? new List<CauHoiDto>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách tất cả nhóm câu hỏi.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
     }
 }

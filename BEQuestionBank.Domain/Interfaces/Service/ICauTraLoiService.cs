@@ -5,4 +5,5 @@ namespace BEQuestionBank.Domain.Interfaces.Service;
 public interface ICauTraLoiService : IService<CauTraLoi>
 {
     Task<IEnumerable<CauTraLoi>> GetByMaCauHoi(Guid maCauHoi);
+    Task<bool> CheckSingleCorrectAnswerAsync(Guid maCauHoi);
 }

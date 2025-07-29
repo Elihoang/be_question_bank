@@ -16,6 +16,7 @@ public class Phan : ModelBase
     public string? NoiDung { get; set; }
     public int ThuTu { get; set; }
     public int SoLuongCauHoi  { get; set; }
+    
     public Guid? MaPhanCha { get; set; }
     public int? MaSoPhan { get; set; }
     [Column("XoaTamPhan")]

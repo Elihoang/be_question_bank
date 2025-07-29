@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
+using BEQuestionBank.Application.DTOs;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -24,9 +25,24 @@ namespace BEQuestionBank.API.Controllers
         // GET: api/Phan
         [HttpGet]
         [SwaggerOperation("Lấy danh sách tất cả phân")]
-        public async Task<IEnumerable<Phan>> GetAllAsync()
+        public async Task<IEnumerable<PhanDto>> GetAllAsync()
         {
-            return await _service.GetAllAsync();
+            var phans = await _service.GetAllAsync();
+            var phanDtos = phans.Select(p => new PhanDto
+            {
+                MaPhan = p.MaPhan,
+                MaMonHoc = p.MaMonHoc,
+                TenPhan = p.TenPhan,
+                NoiDung = p.NoiDung,
+                ThuTu = p.ThuTu,
+                SoLuongCauHoi = p.SoLuongCauHoi,
+                MaPhanCha = p.MaPhanCha,
+                LaCauHoiNhom = p.LaCauHoiNhom,
+                XoaTam = p.XoaTam,
+                TenMonHoc = p.MonHoc?.TenMonHoc 
+            });
+            return phanDtos;
+            //return await _service.GetAllAsync();
         }
 
         // GET: api/Phan/{id}

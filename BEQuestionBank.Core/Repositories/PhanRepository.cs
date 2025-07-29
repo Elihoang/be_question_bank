@@ -9,9 +9,17 @@ public class PhanRepository(AppDbContext context) : GenericRepository<Phan>(cont
 {
     private new readonly AppDbContext _context = context;
     
+    public override async Task<IEnumerable<Phan>> GetAllAsync()
+    {
+        return await _context.Phans
+            .Include(p => p.MonHoc)
+            .AsNoTracking()
+            .ToListAsync();
+    }
     public async Task<IEnumerable<Phan>> GetByMaMonHocAsync(Guid maMonHoc)
     {
         return await _context.Phans
+            .Include(p => p.MonHoc) 
             .Where(p => p.MaMonHoc == maMonHoc)
             .AsNoTracking()
             .ToListAsync();

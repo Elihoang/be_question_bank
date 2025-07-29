@@ -8,7 +8,6 @@ using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs.CauHoi;
-using BEQuestionBank.Shared.DTOs.CauTraLoi;
 
 namespace BEQuestionBank.Application.Services
 {
@@ -20,6 +19,17 @@ namespace BEQuestionBank.Application.Services
         {
             _repository = cauHoiRepository;
         }
+
+        public async Task<IEnumerable<CauHoiDto>> GetAllWithAnswersAsync()
+        {
+            return await _repository.GetAllWithAnswersAsync();
+        }
+
+        public async Task<CauHoiDto> GetByIdWithAnswersAsync(Guid id)
+        {
+            return await _repository.GetByIdWithAnswersAsync(id);
+        }
+
         public async Task<CauHoi> GetByIdAsync(Guid id)
         {
             return await _repository.GetByIdAsync(id);
@@ -85,10 +95,6 @@ namespace BEQuestionBank.Application.Services
             return _repository.ExistsAsync(predicate);
         }
 
-        public Task<IEnumerable<object>> GetAllWithAnswersAsync()
-        {
-            throw new NotImplementedException();
-        }
         public Task<IEnumerable<CauHoi>> GetByCLoAsync(EnumCLO maCLo)
         {
             return _repository.GetByCLoAsync(maCLo);
@@ -96,19 +102,27 @@ namespace BEQuestionBank.Application.Services
 
         public Task<IEnumerable<CauHoi>> GetByMaCauHoiChasync(Guid maCHCha)
         {
-           return _repository.GetByMaCauHoiChasync(maCHCha);
+            return _repository.GetByMaCauHoiChasync(maCHCha);
         }
+
         public Task<IEnumerable<CauHoi>> GetByMaPhanAsync(Guid maPhan)
         {
             return _repository.GetByMaPhanAsync(maPhan);
         }
+
         public Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
         {
             return _repository.GetByMaMonHocAsync(maMonHoc);
         }
+
         public Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi)
         {
             return _repository.GetByMaDeThiAsync(maDeThi);
+        }
+        public async Task<IEnumerable<CauHoiDto>> GetAllGroupsAsync()
+        {
+            var result = await _repository.GetAllGroupsAsync();
+            return result ?? new List<CauHoiDto>();
         }
     }
 }

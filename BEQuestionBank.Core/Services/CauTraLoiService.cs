@@ -58,4 +58,9 @@ public class CauTraLoiService : ICauTraLoiService
     {
         await _repository.UpdateAsync(model);
     }
+    public async Task<bool> CheckSingleCorrectAnswerAsync(Guid maCauHoi)
+    {
+        var answers = await _repository.GetByMaCauHoi(maCauHoi);
+        return answers.Count(a => a.LaDapAn) == 1;
+    }
 }

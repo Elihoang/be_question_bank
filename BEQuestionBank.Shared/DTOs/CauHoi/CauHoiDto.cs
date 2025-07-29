@@ -23,5 +23,6 @@ namespace BEQuestionBank.Shared.DTOs.CauHoi
         public DateTime? NgaySua { get; set; }
         public EnumCLO? CLO { get; set; }
         public List<CauTraLoiDto> CauTraLois { get; set; } = new List<CauTraLoiDto>();
+        public List<CauHoiDto> CauHoiCons { get; set; } = new List<CauHoiDto>();
     }
 }
