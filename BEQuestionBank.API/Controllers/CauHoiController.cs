@@ -455,5 +455,90 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
             }
         }
+        [HttpPost("WithAnswers")]
+        [SwaggerOperation(Summary = "Thêm mới câu hỏi kèm câu trả lời")]
+        public async Task<ActionResult<CauHoiDto>> CreateWithAnswersAsync([FromBody] CreateCauHoiWithAnswersDto cauHoiDto)
+        {
+            if (cauHoiDto == null)
+            {
+                _logger.LogError("Yêu cầu thêm câu hỏi kèm câu trả lời không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, "Yêu cầu không hợp lệ.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Dữ liệu đầu vào không hợp lệ: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
+            try
+            {
+                var result = await _service.AddWithAnswersAsync(cauHoiDto);
+                _logger.LogInformation("Thêm mới câu hỏi kèm câu trả lời thành công với MaSoCauHoi: {MaSoCauHoi}", cauHoiDto.MaSoCauHoi);
+                return StatusCode(StatusCodes.Status201Created,
+                    new { Message = "Thêm mới câu hỏi kèm câu trả lời thành công", Data = result });
+            }
+            catch (ArgumentNullException ex)
+            {
+                _logger.LogError(ex, "Dữ liệu câu hỏi không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, "Dữ liệu đầu vào không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thêm mới câu hỏi kèm câu trả lời.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi thêm mới câu hỏi và câu trả lời.");
+            }
+        }
+        
+        [HttpPatch("{id}/WithAnswers")]
+        [SwaggerOperation(Summary = "Cập nhật câu hỏi kèm câu trả lời theo ID")]
+        public async Task<ActionResult<CauHoiDto>> UpdateWithAnswersAsync(string id, [FromBody] UpdateCauHoiWithAnswersDto cauHoiDto)
+        {
+            if (cauHoiDto == null)
+            {
+                _logger.LogError("Yêu cầu cập nhật câu hỏi kèm câu trả lời không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, "Yêu cầu không hợp lệ.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Dữ liệu đầu vào không hợp lệ: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID câu hỏi không hợp lệ: {Id}", id);
+                    return StatusCode(StatusCodes.Status400BadRequest, "ID câu hỏi không hợp lệ.");
+                }
+
+                var result = await _service.UpdateWithAnswersAsync(guidId, cauHoiDto);
+                _logger.LogInformation("Cập nhật câu hỏi kèm câu trả lời thành công với MaSoCauHoi: {MaSoCauHoi}", cauHoiDto.MaSoCauHoi);
+                return StatusCode(StatusCodes.Status200OK,
+                    new { Message = "Cập nhật câu hỏi kèm câu trả lời thành công", Data = result });
+            }
+            catch (ArgumentNullException ex)
+            {
+                _logger.LogError(ex, "Dữ liệu câu hỏi không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(ex, "Dữ liệu đầu vào không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật câu hỏi kèm câu trả lời với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi cập nhật câu hỏi và câu trả lời.");
+            }
+        }
     }
 }

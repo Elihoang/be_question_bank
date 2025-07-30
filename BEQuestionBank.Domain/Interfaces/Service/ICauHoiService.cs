@@ -14,4 +14,6 @@ public interface ICauHoiService : IService<CauHoi>
     Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi);
     Task<IEnumerable<CauHoi>> GetByMaCauHoiChasync(Guid maCHCha); 
     Task<IEnumerable<CauHoiDto>> GetAllGroupsAsync();
+    Task<CauHoiDto> AddWithAnswersAsync(CreateCauHoiWithAnswersDto cauHoiDto);
+    Task<CauHoiDto> UpdateWithAnswersAsync(Guid maCauHoi, UpdateCauHoiWithAnswersDto cauHoiDto);
 }

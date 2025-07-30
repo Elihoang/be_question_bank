@@ -8,46 +8,49 @@ using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs.CauHoi;
+using BEQuestionBank.Shared.DTOs.CauTraLoi;
 
 namespace BEQuestionBank.Application.Services
 {
     public class CauHoiService : ICauHoiService
     {
-        private readonly ICauHoiRepository _repository;
+        private readonly ICauHoiRepository _cauHoiRepository;
+        private readonly ICauTraLoiRepository _cauTraLoiRepository;
 
-        public CauHoiService(ICauHoiRepository cauHoiRepository)
+        public CauHoiService(ICauHoiRepository cauHoiRepository, ICauTraLoiRepository cauTraLoiRepository)
         {
-            _repository = cauHoiRepository;
+            _cauHoiRepository = cauHoiRepository ?? throw new ArgumentNullException(nameof(cauHoiRepository));
+            _cauTraLoiRepository = cauTraLoiRepository ?? throw new ArgumentNullException(nameof(cauTraLoiRepository));
         }
 
         public async Task<IEnumerable<CauHoiDto>> GetAllWithAnswersAsync()
         {
-            return await _repository.GetAllWithAnswersAsync();
+            return await _cauHoiRepository.GetAllWithAnswersAsync();
         }
 
         public async Task<CauHoiDto> GetByIdWithAnswersAsync(Guid id)
         {
-            return await _repository.GetByIdWithAnswersAsync(id);
+            return await _cauHoiRepository.GetByIdWithAnswersAsync(id);
         }
 
         public async Task<CauHoi> GetByIdAsync(Guid id)
         {
-            return await _repository.GetByIdAsync(id);
+            return await _cauHoiRepository.GetByIdAsync(id);
         }
 
         public Task<IEnumerable<CauHoi>> GetAllAsync()
         {
-            return _repository.GetAllAsync();
+            return _cauHoiRepository.GetAllAsync();
         }
 
         public Task<IEnumerable<CauHoi>> FindAsync(Expression<Func<CauHoi, bool>> predicate)
         {
-            return _repository.FindAsync(predicate);
+            return _cauHoiRepository.FindAsync(predicate);
         }
 
         public Task<CauHoi> FirstOrDefaultAsync(Expression<Func<CauHoi, bool>> predicate)
         {
-            return _repository.FirstOrDefaultAsync(predicate);
+            return _cauHoiRepository.FirstOrDefaultAsync(predicate);
         }
 
         public Task AddAsync(CauHoi model)
@@ -62,7 +65,12 @@ namespace BEQuestionBank.Application.Services
                 throw new ArgumentException("Nội dung câu hỏi không được để trống.", nameof(model.NoiDung));
             }
 
-            return _repository.AddAsync(model);
+            return _cauHoiRepository.AddAsync(model);
+        }
+
+        public async Task<CauHoiDto> AddWithAnswersAsync(CreateCauHoiWithAnswersDto cauHoiDto)
+        {
+            return await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
         }
 
         public Task UpdateAsync(CauHoi model)
@@ -77,7 +85,7 @@ namespace BEQuestionBank.Application.Services
                 throw new ArgumentException("Nội dung câu hỏi không được để trống.", nameof(model.NoiDung));
             }
 
-            return _repository.UpdateAsync(model);
+            return _cauHoiRepository.UpdateAsync(model);
         }
 
         public Task DeleteAsync(CauHoi model)
@@ -87,42 +95,48 @@ namespace BEQuestionBank.Application.Services
                 throw new ArgumentNullException(nameof(model), "Câu hỏi không được null.");
             }
 
-            return _repository.DeleteAsync(model);
+            return _cauHoiRepository.DeleteAsync(model);
         }
 
         public Task<bool> ExistsAsync(Expression<Func<CauHoi, bool>> predicate)
         {
-            return _repository.ExistsAsync(predicate);
+            return _cauHoiRepository.ExistsAsync(predicate);
         }
 
         public Task<IEnumerable<CauHoi>> GetByCLoAsync(EnumCLO maCLo)
         {
-            return _repository.GetByCLoAsync(maCLo);
+            return _cauHoiRepository.GetByCLoAsync(maCLo);
         }
 
         public Task<IEnumerable<CauHoi>> GetByMaCauHoiChasync(Guid maCHCha)
         {
-            return _repository.GetByMaCauHoiChasync(maCHCha);
+            return _cauHoiRepository.GetByMaCauHoiChasync(maCHCha);
         }
 
         public Task<IEnumerable<CauHoi>> GetByMaPhanAsync(Guid maPhan)
         {
-            return _repository.GetByMaPhanAsync(maPhan);
+            return _cauHoiRepository.GetByMaPhanAsync(maPhan);
         }
 
         public Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
         {
-            return _repository.GetByMaMonHocAsync(maMonHoc);
+            return _cauHoiRepository.GetByMaMonHocAsync(maMonHoc);
         }
 
         public Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi)
         {
-            return _repository.GetByMaDeThiAsync(maDeThi);
+            return _cauHoiRepository.GetByMaDeThiAsync(maDeThi);
         }
+
         public async Task<IEnumerable<CauHoiDto>> GetAllGroupsAsync()
         {
-            var result = await _repository.GetAllGroupsAsync();
+            var result = await _cauHoiRepository.GetAllGroupsAsync();
             return result ?? new List<CauHoiDto>();
         }
+        public async Task<CauHoiDto> UpdateWithAnswersAsync(Guid maCauHoi, UpdateCauHoiWithAnswersDto cauHoiDto)
+        {
+            return await _cauHoiRepository.UpdateWithAnswersAsync(maCauHoi, cauHoiDto);
+        }
+
     }
 }
