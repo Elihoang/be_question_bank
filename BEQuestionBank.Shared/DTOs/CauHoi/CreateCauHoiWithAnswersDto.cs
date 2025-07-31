@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Shared.DTOs.CauTraLoi;
+using BEQuestionBank.Shared.DTOs.File;
 
 namespace BEQuestionBank.Shared.DTOs.CauHoi
 {
@@ -20,5 +21,6 @@ namespace BEQuestionBank.Shared.DTOs.CauHoi
         public int? SoLanDung { get; set; } = 0;
         public EnumCLO? CLO { get; set; }
         public List<CreateCauTraLoiDto> CauTraLois { get; set; } = new List<CreateCauTraLoiDto>();
+        public List<FileDto> Files { get; set; } = new List<FileDto>();
     }
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using BEQuestionBank.Domain.Enums;
 
 namespace BEQuestionBank.Domain.Models;
 
@@ -11,8 +12,9 @@ public class File
     [ForeignKey("CauHoi")]
     public Guid? MaCauHoi { get; set; }
     public string? TenFile { get; set; }
-    public int? LoaiFile { get; set; }
-    public String? MaCauTraLoi { get; set; }
+    public FileType? LoaiFile { get; set; }
+    [ForeignKey("CauTraLoi")]
+    public Guid? MaCauTraLoi { get; set; }
 
     public virtual CauHoi? CauHoi { get; set; }
     public virtual CauTraLoi? CauTraLoi { get; set; }
