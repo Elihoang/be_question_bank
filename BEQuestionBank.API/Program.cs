@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
                 .AllowCredentials(); // nếu dùng cookie hoặc auth
         });
 });
-
+builder.Services.AddSingleton<string>(provider => "wwwroot/uploads");
 // Cấu hình Log
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)

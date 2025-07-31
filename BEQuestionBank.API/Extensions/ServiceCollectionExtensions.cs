@@ -5,6 +5,7 @@ using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Infrastructure.Repositories;
+using File = BEQuestionBank.Domain.Models.File;
 
 namespace BEQuestionBank.API.Extensions;
 
@@ -19,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IService<Phan>, PhanService>();
         services.AddScoped<IService<MonHoc>, MonHocService>();
         services.AddScoped<IService<CauTraLoi>, CauTraLoiService>();
+        services.AddScoped<IService<File>, FileService>();
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
@@ -39,6 +41,11 @@ public static class ServiceCollectionExtensions
         //Phan
         services.AddScoped<IPhanRepository, PhanRepository>();
         services.AddScoped<IPhanService, PhanService>();
+        // File
+        services.AddScoped<IFileRepository, FileRepository>();
+        services.AddScoped<IFileService, FileService>();
+        
+        services.AddScoped<WordImportService>();
 
         return services;
     }
