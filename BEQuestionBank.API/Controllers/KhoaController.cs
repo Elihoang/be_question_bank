@@ -1,5 +1,6 @@
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
+using BEQuestionBank.Shared.DTOs;
 using BEQuestionBank.Shared.DTOs.Khoa;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -48,15 +49,24 @@ namespace BEQuestionBank.API.Controllers
         [SwaggerOperation("Lấy danh sách Khoa")]
         public async Task<IEnumerable<KhoaDto>> GetAllAsync()
         {
-            var khoas = await _service.GetAllAsync();
-            var khoaDtos = khoas.Select(k => new KhoaDto
+            var list = await _service.GetAllAsync(); // Khoa có Include DanhSachMonHoc
+
+            var result = list.Select(k => new KhoaDto
             {
                 MaKhoa = k.MaKhoa,
                 TenKhoa = k.TenKhoa,
-                XoaTam = k.XoaTam
+                XoaTam = k.XoaTam,
+                DanhSachMonHoc = k.DanhSachMonHoc?.Select(m => new MonHocDto
+                {
+                    MaMonHoc = m.MaMonHoc,
+                    TenMonHoc = m.TenMonHoc,
+                    SoTinChi = m.SoTinChi
+                }).ToList() ?? new()
             });
-            return khoaDtos;
+
+            return result;
         }
+
 
         //POST: api/Khoa
         [HttpPost]

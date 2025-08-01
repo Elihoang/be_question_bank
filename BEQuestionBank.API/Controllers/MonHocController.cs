@@ -35,16 +35,10 @@ namespace BEQuestionBank.API.Controllers
 
         [HttpGet]
         [SwaggerOperation("Lấy danh sách tất cả môn học")]
-        public async Task<IEnumerable<MonHocDto>> GetAllAsync()
+        public async Task<IEnumerable<MonHoc>> GetAllAsync()
         {
-            var ds = await _service.GetAllAsync();
-            return ds.Select(m => new MonHocDto
-            {
-                MaMonHoc = m.MaMonHoc,
-                TenMonHoc = m.TenMonHoc,
-                MaKhoa = m.MaKhoa,
-                XoaTam = m.XoaTam
-            });
+            var list = await _service.GetAllAsync();
+            return list;
         }
 
         [HttpGet("khoa/{maKhoa}")]
@@ -55,6 +49,7 @@ namespace BEQuestionBank.API.Controllers
             return ds.Select(m => new MonHocDto
             {
                 MaMonHoc = m.MaMonHoc,
+                MaSoMonHoc = m.MaSoMonHoc,
                 TenMonHoc = m.TenMonHoc,
                 MaKhoa = m.MaKhoa,
                 XoaTam = m.XoaTam
@@ -69,6 +64,7 @@ namespace BEQuestionBank.API.Controllers
             {
                 var monHoc = new MonHoc
                 {
+                    MaSoMonHoc = model.MaSoMonHoc,
                     TenMonHoc = model.TenMonHoc,
                     MaKhoa = model.MaKhoa,
                     XoaTam = model.XoaTam ?? false
@@ -88,24 +84,37 @@ namespace BEQuestionBank.API.Controllers
         [SwaggerOperation("Cập nhật thông tin môn học")]
         public async Task<IActionResult> UpdateAsync(string id, [FromBody] MonHocUpdateDto model)
         {
-            var monHoc = await _service.GetByIdAsync(Guid.Parse(id));
-            if (monHoc == null)
-                return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy môn học với mã {id}");
-
-            monHoc.TenMonHoc = model.TenMonHoc;
-            monHoc.MaKhoa = model.MaKhoa;
-            monHoc.XoaTam = model.XoaTam ?? monHoc.XoaTam;
-
-            await _service.UpdateAsync(monHoc);
-
-            return StatusCode(StatusCodes.Status200OK, new MonHocDto
+            try
             {
-                MaMonHoc = monHoc.MaMonHoc,
-                TenMonHoc = monHoc.TenMonHoc,
-                MaKhoa = monHoc.MaKhoa,
-                XoaTam = monHoc.XoaTam
-            });
+                var monHoc = await _service.GetByIdAsync(Guid.Parse(id));
+                if (monHoc == null)
+                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy môn học với mã {id}");
+
+                monHoc.TenMonHoc = model.TenMonHoc;
+                monHoc.MaKhoa = model.MaKhoa;
+                monHoc.XoaTam = model.XoaTam ?? monHoc.XoaTam;
+
+                await _service.UpdateAsync(monHoc);
+
+                return StatusCode(StatusCodes.Status200OK, new MonHocDto
+                {
+                    MaMonHoc = monHoc.MaMonHoc,
+                    TenMonHoc = monHoc.TenMonHoc,
+                    MaKhoa = monHoc.MaKhoa,
+                    XoaTam = monHoc.XoaTam
+                });
+            }
+            catch (FormatException)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, "ID không đúng định dạng GUID.");
+            }
+            catch (Exception ex)
+            {
+                // Ghi log nếu cần
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Lỗi khi cập nhật môn học: {ex.Message}");
+            }
         }
+
 
         [HttpDelete("{id}")]
         [SwaggerOperation("Xóa môn học")]

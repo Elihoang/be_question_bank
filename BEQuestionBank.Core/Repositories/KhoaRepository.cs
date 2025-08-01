@@ -8,9 +8,14 @@ namespace BEQuestionBank.Core.Repositories;
 
 public class KhoaRepository(AppDbContext context) : GenericRepository<Khoa>(context), IKhoaRepository
 {
-    private new readonly AppDbContext _context = context;
+    private readonly AppDbContext _context = context;
     public async Task<Khoa?> GetByTenKhoaAsync(string tenKhoa)
     {
         return await _context.Khoas.FirstOrDefaultAsync(k => k.TenKhoa == tenKhoa);
+    }
+
+    public async override Task<IEnumerable<Khoa>> GetAllAsync()
+    {
+        return await _context.Khoas.Include(k => k.DanhSachMonHoc).ToListAsync();
     }
 }
