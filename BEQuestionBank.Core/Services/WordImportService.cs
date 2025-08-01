@@ -1,4 +1,3 @@
-using Aspose.Words;
 using Aspose.Words.Drawing;
 using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Domain.Interfaces.Repo;
@@ -11,8 +10,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
+using ImageMagick;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System.IO.Compression;
 
 namespace BEQuestionBank.Core.Services
 {
@@ -20,9 +25,9 @@ namespace BEQuestionBank.Core.Services
     {
         private readonly ICauHoiRepository _cauHoiRepository;
         private readonly ILogger<WordImportService> _logger;
-        private readonly string _storagePath; // Đường dẫn lưu trữ tệp (ví dụ: wwwroot/media)
-        private const int BatchSize = 50; // Xử lý 50 câu hỏi mỗi lô
-        private const long MaxFileSize = 10 * 1024 * 1024; // Giới hạn 10MB
+        private readonly string _storagePath;
+        private const int BatchSize = 50;
+        private const long MaxFileSize = 10 * 1024 * 1024; // 10MB
 
         public WordImportService(ICauHoiRepository cauHoiRepository, string storagePath, ILogger<WordImportService> logger)
         {
@@ -35,32 +40,32 @@ namespace BEQuestionBank.Core.Services
         {
             var result = new ImportResult();
 
-            // Kiểm tra đầu vào
+            // Input validation
             if (wordFile == null || wordFile.Length == 0)
             {
-                _logger.LogWarning("Tệp Word không hợp lệ.");
-                result.Errors.Add("Tệp Word là bắt buộc và không được rỗng.");
+                _logger.LogWarning("Invalid Word file: File is null or empty.");
+                result.Errors.Add("Word file is required and must not be empty.");
                 return result;
             }
 
             if (wordFile.Length > MaxFileSize)
             {
-                _logger.LogWarning("Tệp Word vượt quá kích thước cho phép: {FileSize} bytes.", wordFile.Length);
-                result.Errors.Add($"Tệp Word không được vượt quá {MaxFileSize / (1024 * 1024)}MB.");
+                _logger.LogWarning("Word file exceeds size limit: {FileSize} bytes.", wordFile.Length);
+                result.Errors.Add($"Word file must not exceed {MaxFileSize / (1024 * 1024)}MB.");
                 return result;
             }
 
             if (!wordFile.FileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Tệp không phải định dạng .docx: {FileName}", wordFile.FileName);
-                result.Errors.Add("Tệp phải có định dạng .docx.");
+                _logger.LogWarning("Invalid file format: {FileName}. Expected .docx.", wordFile.FileName);
+                result.Errors.Add("File must be in .docx format.");
                 return result;
             }
 
             if (!string.IsNullOrEmpty(mediaFolderPath) && !Directory.Exists(mediaFolderPath))
             {
-                _logger.LogWarning("Thư mục media không tồn tại: {MediaFolderPath}", mediaFolderPath);
-                result.Errors.Add("Thư mục chứa tệp media không tồn tại.");
+                _logger.LogWarning("Media folder does not exist: {MediaFolderPath}", mediaFolderPath);
+                result.Errors.Add("Media folder does not exist.");
                 return result;
             }
 
@@ -68,12 +73,12 @@ namespace BEQuestionBank.Core.Services
             {
                 var questions = await ParseWordFileAsync(wordFile);
                 await SaveQuestionsToDatabaseAsync(questions, maPhan, mediaFolderPath, result);
-                _logger.LogInformation("Nhập {SuccessCount} câu hỏi thành công, {ErrorCount} lỗi.", result.SuccessCount, result.Errors.Count);
+                _logger.LogInformation("Successfully imported {SuccessCount} questions with {ErrorCount} errors.", result.SuccessCount, result.Errors.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi nhập câu hỏi từ file Word.");
-                result.Errors.Add("Đã xảy ra lỗi hệ thống khi nhập câu hỏi: " + ex.Message);
+                _logger.LogError(ex, "Error importing questions from Word file.");
+                result.Errors.Add($"System error occurred during import: {ex.Message}");
             }
 
             return result;
@@ -82,164 +87,271 @@ namespace BEQuestionBank.Core.Services
         private async Task<List<QuestionData>> ParseWordFileAsync(IFormFile wordFile)
         {
             var questions = new List<QuestionData>();
-            using var memoryStream = new MemoryStream();
-            await wordFile.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
+            var tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".docx");
 
-            var document = new Document(memoryStream);
-            var cloRegex = new Regex(@"\(CLO(\d+)\)");
-            var audioRegex = new Regex(@"\[<audio>\](.*?)\[</audio>\]");
-            var currentQuestion = new QuestionData();
-            var paragraphs = document.GetChildNodes(NodeType.Paragraph, true).Cast<Paragraph>();
-            int imageIndex = 0;
-
-            // Trích xuất hình ảnh nhúng
-            var images = document.GetChildNodes(NodeType.Shape, true)
-                .Cast<Shape>()
-                .Where(s => s.HasImage)
-                .ToList();
-            var imageFiles = new List<FileData>();
-            foreach (var shape in images)
+            try
             {
-                var imageFileName = $"image_{Guid.NewGuid()}.png";
-                imageFiles.Add(new FileData
+                // Save file to temporary location
+                using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
                 {
-                    FileName = imageFileName,
-                    FileType = FileType.Image,
-                    ImageData = shape.ImageData.ImageBytes
-                });
-                _logger.LogInformation("Đã trích xuất hình ảnh nhúng: {FileName}", imageFileName);
-            }
-
-            foreach (var paragraph in paragraphs)
-            {
-                var runs = paragraph.GetChildNodes(NodeType.Run, true).Cast<Run>();
-                var text = string.Join("", runs.Select(r => r.GetText()).Where(t => !string.IsNullOrWhiteSpace(t))).Trim();
-                if (string.IsNullOrEmpty(text)) continue;
-
-                _logger.LogDebug("Phân tích đoạn văn: {Text}", text);
-
-                // Xác định câu hỏi mới bằng CLO
-                var cloMatch = cloRegex.Match(text);
-                if (cloMatch.Success && Enum.TryParse<EnumCLO>($"CLO{cloMatch.Groups[1].Value}", out var clo))
-                {
-                    if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
-                    {
-                        currentQuestion.Files.AddRange(imageFiles.Where(f => !questions.Any(q => q.Files.Contains(f))));
-                        questions.Add(currentQuestion);
-                        currentQuestion = new QuestionData();
-                    }
-                    currentQuestion.CLO = clo;
-                    currentQuestion.NoiDung = text.Substring(cloMatch.Length).Trim();
-                    _logger.LogInformation("Đã tìm thấy câu hỏi: {NoiDung}", currentQuestion.NoiDung);
-                    continue;
+                    await wordFile.CopyToAsync(fileStream);
                 }
 
-                // Xác định đáp án với định dạng A., B., C., D.
-                bool isAnswer = false;
-                var answerTextBuilder = new System.Text.StringBuilder();
-                char? answerKey = null;
-                bool isCorrectAnswer = false; // Biến để xác định đáp án đúng
-                foreach (var run in runs)
+                // Validate DOCX structure
+                if (!IsValidDocxFile(tempFilePath))
                 {
-                    var runText = run.GetText().Trim();
+                    throw new InvalidOperationException("File is not a valid or corrupted DOCX file.");
+                }
 
-                    // Nhận dạng dòng bắt đầu bằng "A.", "B.",...
-                    if (runText.Length >= 2 && "ABCD".Contains(runText[0]) && runText[1] == '.')
+                return await ParseWordFileFromPath(tempFilePath);
+            }
+            finally
+            {
+                // Ensure temp file is deleted
+                if (File.Exists(tempFilePath))
+                {
+                    try
                     {
-                        answerKey = runText[0];
-                        answerTextBuilder.Clear();
-                        isAnswer = true;
+                        File.Delete(tempFilePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to delete temporary file: {TempFilePath}", tempFilePath);
+                    }
+                }
+            }
+        }
 
-                        // Kiểm tra xem đáp án có được gạch chân hoặc in đậm không để xác định đáp án đúng
-                        isCorrectAnswer = run.Font.Underline != Underline.None || run.Font.Bold;
+        private bool IsValidDocxFile(string filePath)
+        {
+            try
+            {
+                using (var zip = ZipFile.OpenRead(filePath))
+                {
+                    return zip.Entries.Any(e => e.FullName == "[Content_Types].xml") &&
+                           zip.Entries.Any(e => e.FullName == "_rels/.rels") &&
+                           zip.Entries.Any(e => e.FullName == "word/document.xml");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "File validation failed for: {FilePath}", filePath);
+                return false;
+            }
+        }
 
-                        // Nếu có nội dung phía sau "A.", thêm luôn
-                        if (runText.Length > 2)
+        private async Task<List<QuestionData>> ParseWordFileFromPath(string filePath)
+        {
+            var questions = new List<QuestionData>();
+            var cloRegex = new Regex(@"\(CLO(\d+)\)");
+            var audioRegex = new Regex(@"\[<audio>\](.*?)\[</audio>\]");
+            var imageMapping = new Dictionary<string, string>();
+
+            try
+            {
+                using (var wordDoc = WordprocessingDocument.Open(filePath, false))
+                {
+                    var mainPart = wordDoc.MainDocumentPart;
+                    if (mainPart == null)
+                    {
+                        throw new InvalidOperationException("Document does not have MainDocumentPart.");
+                    }
+
+                    // Process images
+                    await ProcessImages(mainPart, imageMapping);
+
+                    var body = mainPart.Document.Body;
+                    if (body == null)
+                    {
+                        _logger.LogWarning("Document body is null.");
+                        return questions;
+                    }
+
+                    var currentQuestion = new QuestionData();
+
+                    foreach (var para in body.Elements<Paragraph>())
+                    {
+                        var result = ProcessParagraph(para, imageMapping, cloRegex, audioRegex, currentQuestion);
+
+                        if (result.IsNewQuestion && !string.IsNullOrEmpty(currentQuestion.NoiDung))
                         {
-                            answerTextBuilder.Append(runText.Substring(2).TrimStart());
+                            questions.Add(currentQuestion);
+                            currentQuestion = result.Question;
                         }
+                        else if (result.Question != null)
+                        {
+                            currentQuestion = result.Question;
+                        }
+                    }
 
+                    if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
+                    {
+                        questions.Add(currentQuestion);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing Word file: {FilePath}", filePath);
+                throw;
+            }
+
+            _logger.LogInformation("Parsed {Count} questions from Word file.", questions.Count);
+            return questions;
+        }
+
+        private async Task ProcessImages(MainDocumentPart mainPart, Dictionary<string, string> imageMapping)
+        {
+            try
+            {
+                foreach (var imagePart in mainPart.ImageParts)
+                {
+                    var relId = mainPart.GetIdOfPart(imagePart);
+                    byte[] imageBytes;
+
+                    using (var imgStream = imagePart.GetStream())
+                    using (var ms = new MemoryStream())
+                    {
+                        await imgStream.CopyToAsync(ms);
+                        imageBytes = ms.ToArray();
+                    }
+
+                    if (imageBytes.Length == 0)
+                    {
+                        _logger.LogWarning("Empty or invalid image data for relId: {RelId}", relId);
                         continue;
                     }
 
-                    // Nếu đang trong đáp án, tiếp tục gom nội dung
-                    if (isAnswer)
+                    string mimeType = imagePart.ContentType;
+                    _logger.LogInformation("Processing image relId={RelId}, mimeType={MimeType}, size={Size} bytes", relId, mimeType, imageBytes.Length);
+
+                    if (!mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                     {
-                        answerTextBuilder.Append(" " + runText);
+                        _logger.LogWarning("Invalid image format: {ContentType}, relId: {RelId}", mimeType, relId);
+                        continue;
                     }
-                }
 
-                if (isAnswer && answerKey != null)
-                {
-                    var answerText = answerTextBuilder.ToString().Trim();
-                    var isItalic = runs.Any(r => r.Font.Italic);
-                    var answer = new AnswerData
+                    if (mimeType.Equals("image/x-wmf", StringComparison.OrdinalIgnoreCase))
                     {
-                        NoiDung = answerText,
-                        ThuTu = currentQuestion.Answers.Count + 1,
-                        LaDapAn = isCorrectAnswer || answerText.Contains("Correct", StringComparison.OrdinalIgnoreCase),
-                        HoanVi = isItalic
-                    };
-                    currentQuestion.Answers.Add(answer);
-                    _logger.LogInformation("Đã thêm đáp án: {Key}_ {NoiDung}, LaDapAn: {LaDapAn}, HoanVi: {HoanVi}",
-                        answerKey, answer.NoiDung, answer.LaDapAn, answer.HoanVi);
-                    isAnswer = false;
-                    answerKey = null;
-                    continue;
-                }
+                        try
+                        {
+                            _logger.LogInformation("Converting WMF to PNG using ImageMagick.");
+                            using var image = new MagickImage(imageBytes);
+                            image.Format = MagickFormat.Png;
+                            imageBytes = image.ToByteArray();
+                            mimeType = "image/png";
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to convert WMF to PNG for relId: {RelId}", relId);
+                            imageMapping[relId] = "<img src='placeholder.png' alt='Failed to convert WMF' />";
+                            continue;
+                        }
+                    }
 
-                // Xác định tệp âm thanh
-                var audioMatch = audioRegex.Match(text);
-                if (audioMatch.Success)
-                {
-                    var audioPath = audioMatch.Groups[1].Value.Trim();
-                    currentQuestion.Files.Add(new FileData { FileName = Path.GetFileName(audioPath), FileType = FileType.Audio });
-                    _logger.LogInformation("Đã tìm thấy tệp âm thanh: {FileName}", audioPath);
-                    continue;
+                    var base64Image = Convert.ToBase64String(imageBytes);
+                    var imgTag = $@"<img src=""data:{mimeType};base64,{base64Image}"" alt=""Question Image"" style=""max-width: 100%; height: auto;"" />";
+                    imageMapping[relId] = imgTag;
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing images in Word document.");
+                throw;
+            }
+        }
 
-                // Xác định tệp hình ảnh tham chiếu
-                if (text.EndsWith(".unknown", StringComparison.OrdinalIgnoreCase))
+        private (bool IsNewQuestion, QuestionData Question) ProcessParagraph(
+            Paragraph para,
+            Dictionary<string, string> imageMapping,
+            Regex cloRegex,
+            Regex audioRegex,
+            QuestionData currentQuestion)
+        {
+            string text = string.Join("", para.Descendants<Text>().Select(t => t.Text)).Trim();
+            string htmlText = !string.IsNullOrEmpty(text) ? $"<p>{HttpUtility.HtmlEncode(text)}</p>" : "";
+
+            var imgs = string.Join("",
+                para.Descendants<DocumentFormat.OpenXml.Drawing.Blip>()
+                    .Select(b => b.Embed?.Value)
+                    .Where(relId => relId != null && imageMapping.ContainsKey(relId))
+                    .Select(relId => imageMapping[relId])
+            );
+
+            if (string.IsNullOrEmpty(text) && string.IsNullOrEmpty(imgs))
+                return (false, currentQuestion);
+
+            var cloMatch = cloRegex.Match(text);
+            if (cloMatch.Success && Enum.TryParse<EnumCLO>($"CLO{cloMatch.Groups[1].Value}", out var clo))
+            {
+                var newQuestion = new QuestionData { CLO = clo };
+                var questionText = text.Substring(cloMatch.Length).Trim();
+                newQuestion.NoiDung = $"<p>{HttpUtility.HtmlEncode(questionText)}{imgs}</p>";
+                return (true, newQuestion);
+            }
+
+            if (text.Length >= 2 && "ABCD".Contains(text[0]) && text[1] == '.')
+            {
+                var answerKey = text[0];
+                var answerContent = text.Substring(2).Trim();
+
+                bool isUnderline = para.Descendants<RunProperties>().Any(rp => rp.Underline != null);
+                bool isItalic = para.Descendants<RunProperties>().Any(rp => rp.Italic != null);
+
+                currentQuestion.Answers.Add(new AnswerData
                 {
-                    currentQuestion.Files.Add(new FileData { FileName = text, FileType = FileType.Image });
-                    _logger.LogInformation("Đã tìm thấy tệp hình ảnh tham chiếu: {FileName}", text);
-                }
+                    ThuTu = currentQuestion.Answers.Count + 1,
+                    NoiDung = $"<p>{HttpUtility.HtmlEncode(answerContent)}{imgs}</p>",
+                    LaDapAn = isUnderline,
+                    HoanVi = isItalic
+                });
+                return (false, currentQuestion);
+            }
+
+            var audioMatch = audioRegex.Match(text);
+            if (audioMatch.Success)
+            {
+                currentQuestion.Files.Add(new FileData
+                {
+                    FileName = Path.GetFileName(audioMatch.Groups[1].Value.Trim()),
+                    FileType = FileType.Audio
+                });
+                return (false, currentQuestion);
+            }
+
+            if (text.EndsWith(".unknown", StringComparison.OrdinalIgnoreCase))
+            {
+                currentQuestion.Files.Add(new FileData
+                {
+                    FileName = text,
+                    FileType = FileType.Image
+                });
+                return (false, currentQuestion);
             }
 
             if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
             {
-                currentQuestion.Files.AddRange(imageFiles.Where(f => !questions.Any(q => q.Files.Contains(f))));
-                questions.Add(currentQuestion);
-                _logger.LogInformation("Đã thêm câu hỏi cuối: {NoiDung}", currentQuestion.NoiDung);
+                currentQuestion.NoiDung += htmlText + imgs;
             }
 
-            if (!questions.Any())
-            {
-                _logger.LogWarning("Không có câu hỏi nào hợp lệ sau khi phân tích.");
-                return new List<QuestionData>();
-            }
-
-            _logger.LogInformation("Tổng số câu hỏi hợp lệ: {Count}", questions.Count);
-            return questions;
+            return (false, currentQuestion);
         }
 
         private async Task SaveQuestionsToDatabaseAsync(List<QuestionData> questions, Guid maPhan, string? mediaFolderPath, ImportResult result)
         {
             if (!questions.Any())
             {
-                _logger.LogWarning("Danh sách câu hỏi rỗng, không có dữ liệu để lưu.");
-                result.Errors.Add("Không có câu hỏi nào để lưu.");
+                _logger.LogWarning("No questions to save.");
+                result.Errors.Add("No questions found to save.");
                 return;
             }
 
             var batches = questions.Chunk(BatchSize);
 
-            // Sử dụng giao dịch toàn cục
             using var transaction = await _cauHoiRepository.BeginTransactionAsync();
             try
             {
-                foreach (var batch in batches)
+                await Parallel.ForEachAsync(batches, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (batch, ct) =>
                 {
                     foreach (var question in batch)
                     {
@@ -272,8 +384,7 @@ namespace BEQuestionBank.Core.Services
                             }).ToList()
                         };
 
-                        // Ghi log để theo dõi
-                        _logger.LogInformation("Đang lưu câu hỏi: {NoiDung}", cauHoiDto.NoiDung);
+                        _logger.LogInformation("Saving question: {NoiDung}", cauHoiDto.NoiDung != null ? cauHoiDto.NoiDung.Substring(0, Math.Min(50, cauHoiDto.NoiDung.Length)) : string.Empty);
 
                         var addedCauHoi = await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
 
@@ -286,54 +397,69 @@ namespace BEQuestionBank.Core.Services
                             file.MaCauHoi = addedCauHoi.MaCauHoi;
                         }
 
-                        foreach (var file in question.Files)
+                        await ProcessQuestionFiles(question, addedCauHoi, cauHoiDto, mediaFolderPath, result);
+                        lock (result) // Thread-safe increment
                         {
-                            var destinationPath = Path.Combine(_storagePath, file.FileName);
-                            try
-                            {
-                                if (file.ImageData != null)
-                                {
-                                    await File.WriteAllBytesAsync(destinationPath, file.ImageData);
-                                    result.SuccessCount++;
-                                    _logger.LogInformation("Lưu hình ảnh nhúng {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                }
-                                else if (!string.IsNullOrEmpty(mediaFolderPath))
-                                {
-                                    var fullPath = Path.Combine(mediaFolderPath, file.FileName);
-                                    if (File.Exists(fullPath))
-                                    {
-                                        File.Copy(fullPath, destinationPath, true);
-                                        result.SuccessCount++;
-                                        _logger.LogInformation("Tải lên tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning("Tệp không tồn tại: {FilePath}", fullPath);
-                                        result.Errors.Add($"Tệp không tồn tại: {file.FileName}");
-                                    }
-                                }
-                                else
-                                {
-                                    _logger.LogWarning("Không có mediaFolderPath cho tệp không nhúng: {FileName}", file.FileName);
-                                    result.Errors.Add($"Không tìm thấy mediaFolderPath cho tệp: {file.FileName}");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(ex, "Lỗi khi lưu tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                result.Errors.Add($"Lỗi khi lưu tệp {file.FileName}: {ex.Message}");
-                            }
+                            result.SuccessCount++;
                         }
                     }
-                }
+                });
+
                 await transaction.CommitAsync();
-                _logger.LogInformation("Lưu tất cả batch thành công. Tổng số câu hỏi: {SuccessCount}", result.SuccessCount);
+                _logger.LogInformation("Successfully saved all batches. Total questions: {SuccessCount}", result.SuccessCount);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Lỗi khi lưu batch câu hỏi: {Message}", ex.Message);
-                result.Errors.Add($"Lỗi khi lưu batch câu hỏi: {ex.Message}");
+                _logger.LogError(ex, "Error saving question batch: {Message}", ex.Message);
+                result.Errors.Add($"Error saving question batch: {ex.Message}");
+            }
+        }
+
+        private async Task ProcessQuestionFiles(QuestionData question, dynamic addedCauHoi, CreateCauHoiWithAnswersDto cauHoiDto, string? mediaFolderPath, ImportResult result)
+        {
+            foreach (var file in question.Files)
+            {
+                var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+                var destinationPath = Path.Combine(_storagePath, uniqueFileName);
+                try
+                {
+                    if (file.ImageData != null)
+                    {
+                        await File.WriteAllBytesAsync(destinationPath, file.ImageData);
+                        _logger.LogInformation("Saved embedded image {FileName} for question {MaCauHoi}");
+                    }
+                    else if (!string.IsNullOrEmpty(mediaFolderPath))
+                    {
+                        var fullPath = Path.Combine(mediaFolderPath, file.FileName);
+                        if (File.Exists(fullPath))
+                        {
+                            File.Copy(fullPath, destinationPath, true);
+                            var relativePath = Path.Combine("media", uniqueFileName).Replace("\\", "/");
+                            var fileDto = cauHoiDto.Files.FirstOrDefault(f => f.TenFile == file.FileName);
+                            if (fileDto != null)
+                            {
+                                fileDto.TenFile = $"<img src=\"{relativePath}\" alt=\"Question Image\" style=\"max-width: 100%; height: auto;\" />";
+                            }
+                            _logger.LogInformation("Uploaded file {FileName} for question {MaCauHoi}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning("File does not exist: {FilePath}", fullPath);
+                            result.Errors.Add($"File does not exist: {file.FileName}");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No mediaFolderPath provided for non-embedded file: {FileName}", file.FileName);
+                        result.Errors.Add($"No mediaFolderPath found for file: {file.FileName}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error saving file {FileName} for question {MaCauHoi}");
+                    result.Errors.Add($"Error saving file {file.FileName}: {ex.Message}");
+                }
             }
         }
 
@@ -364,7 +490,7 @@ namespace BEQuestionBank.Core.Services
     {
         public string FileName { get; set; } = string.Empty;
         public FileType FileType { get; set; }
-        public byte[]? ImageData { get; set; } // Dữ liệu hình ảnh nhúng
+        public byte[]? ImageData { get; set; }
     }
 
     public class ImportResult

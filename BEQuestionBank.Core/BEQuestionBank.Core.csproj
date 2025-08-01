@@ -25,6 +25,8 @@
       <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
       <PackageReference Include="Aspose.Words" Version="25.7.0" />
       <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+      <PackageReference Include="DocX" Version="4.0.25105.5786" />
+      <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="14.7.0" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.7">
         <PrivateAssets>all</PrivateAssets>
@@ -37,6 +39,9 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.7" />
       <PackageReference Include="Npgsql" Version="9.0.3" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+      <PackageReference Include="SkiaSharp" Version="3.119.0" />
+      <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.0" />
+      <PackageReference Include="System.Drawing.Common" Version="9.0.7" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.13.0" />
     </ItemGroup>
