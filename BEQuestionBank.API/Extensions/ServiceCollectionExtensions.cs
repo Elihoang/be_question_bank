@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IService<MonHoc>, MonHocService>();
         services.AddScoped<IService<CauTraLoi>, CauTraLoiService>();
         services.AddScoped<IService<File>, FileService>();
+        services.AddScoped<IService<DeThi>, DeThiService>();
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
@@ -49,6 +50,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INguoiDungRepository, NguoiDungRepository>();
         services.AddScoped<JwtService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<WordImportService>();
+        
+        //De Thi
+        services.AddScoped<IDeThiRepository, DeThiRepository>();
+        services.AddScoped<IDeThiService, DeThiService>();
 
         return services;
     }

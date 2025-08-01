@@ -79,6 +79,17 @@ namespace BEQuestionBank.Core.Services
             };
         }
 
+        public Task<IEnumerable<FileDto>> FindFilesByCauHoiOrCauTraLoiAsync(Guid? maCauHoi, Guid? maCauTraLoi)
+        {
+            if (maCauHoi == null && maCauTraLoi == null)
+            {
+                _logger.LogError("Cả MaCauHoi và MaCauTraLoi đều không được cung cấp.");
+                throw new ArgumentException("Ít nhất một trong hai tham số MaCauHoi hoặc MaCauTraLoi phải được cung cấp.");
+            }
+
+            return _fileRepository.FindFilesByCauHoiOrCauTraLoiAsync(maCauHoi, maCauTraLoi);
+        }
+
 
         public async Task<File> GetByIdAsync(Guid maFile)
         {

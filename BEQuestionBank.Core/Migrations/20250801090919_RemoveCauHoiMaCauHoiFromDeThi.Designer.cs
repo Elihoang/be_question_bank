@@ -3,6 +3,7 @@ using System;
 using BEQuestionBank.Core.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BEQuestionBank.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250801090919_RemoveCauHoiMaCauHoiFromDeThi")]
+    partial class RemoveCauHoiMaCauHoiFromDeThi
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -199,6 +202,9 @@ namespace BEQuestionBank.Core.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("CauHoiMaCauHoi")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("DaDuyet")
                         .HasColumnType("boolean");
 
@@ -219,6 +225,8 @@ namespace BEQuestionBank.Core.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("MaDeThi");
+
+                    b.HasIndex("CauHoiMaCauHoi");
 
                     b.HasIndex("MaMonHoc");
 
@@ -523,6 +531,10 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.DeThi", b =>
                 {
+                    b.HasOne("BEQuestionBank.Domain.Models.CauHoi", null)
+                        .WithMany("DeThis")
+                        .HasForeignKey("CauHoiMaCauHoi");
+
                     b.HasOne("BEQuestionBank.Domain.Models.MonHoc", "MonHoc")
                         .WithMany()
                         .HasForeignKey("MaMonHoc")
@@ -602,6 +614,8 @@ namespace BEQuestionBank.Core.Migrations
                     b.Navigation("CauHoiCons");
 
                     b.Navigation("CauTraLois");
+
+                    b.Navigation("DeThis");
 
                     b.Navigation("Files");
                 });

@@ -20,7 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<DeThi> DeThis { get; set; }
     public DbSet<ChiTietDeThi> ChiTietDeThis { get; set; }
     public DbSet<YeuCauRutTrich> YeuCauRutTrichs { get; set; }
-    public DbSet<File> FileDinhKems { get; set; }
+    public DbSet<File> Files { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -153,7 +153,6 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 .Include(c => c.Files)
                 .Include(c => c.CauHoiCha)
                 .Include(c => c.CauHoiCons)
-                .Where(c => c.DeThis.Any(d => d.MaDeThi == maDeThi) && c.XoaTam == false)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -253,106 +252,104 @@ namespace BEQuestionBank.Infrastructure.Repositories
             return await _context.Database.BeginTransactionAsync();
         }
         public async Task<CauHoiDto> AddWithAnswersAsync(CreateCauHoiWithAnswersDto cauHoiDto)
-{
-    if (cauHoiDto == null)
-    {
-        throw new ArgumentNullException(nameof(cauHoiDto), "Dữ liệu câu hỏi không được null.");
-    }
-
-    if (string.IsNullOrWhiteSpace(cauHoiDto.NoiDung))
-    {
-        throw new ArgumentException("Nội dung câu hỏi không được để trống.", nameof(cauHoiDto.NoiDung));
-    }
-
-    if (cauHoiDto.MaCauHoiCha.HasValue)
-    {
-        var parentExists = await _context.CauHois.AnyAsync(c => c.MaCauHoi == cauHoiDto.MaCauHoiCha.Value);
-        if (!parentExists)
         {
-            throw new ArgumentException($"Câu hỏi cha với mã {cauHoiDto.MaCauHoiCha} không tồn tại.");
+            if (cauHoiDto == null)
+            {
+                throw new ArgumentNullException(nameof(cauHoiDto), "Dữ liệu câu hỏi không được null.");
+            }
+
+            if (string.IsNullOrWhiteSpace(cauHoiDto.NoiDung))
+            {
+                throw new ArgumentException("Nội dung câu hỏi không được để trống.", nameof(cauHoiDto.NoiDung));
+            }
+
+            if (cauHoiDto.MaCauHoiCha.HasValue)
+            {
+                var parentExists = await _context.CauHois.AnyAsync(c => c.MaCauHoi == cauHoiDto.MaCauHoiCha.Value);
+                if (!parentExists)
+                {
+                    throw new ArgumentException($"Câu hỏi cha với mã {cauHoiDto.MaCauHoiCha} không tồn tại.");
+                }
+            }
+
+            if (cauHoiDto.CauTraLois.Any())
+            {
+                var correctAnswersCount = cauHoiDto.CauTraLois.Count(a => a.LaDapAn);
+                if (correctAnswersCount > 1)
+                {
+                    throw new ArgumentException("Chỉ được phép có một câu trả lời đúng.");
+                }
+            }
+
+            // Không mở transaction ở đây
+            var cauHoi = new CauHoi
+            {
+                MaCauHoi = Guid.NewGuid(),
+                MaPhan = cauHoiDto.MaPhan,
+                MaSoCauHoi = cauHoiDto.MaSoCauHoi,
+                NoiDung = cauHoiDto.NoiDung,
+                HoanVi = cauHoiDto.HoanVi,
+                CapDo = cauHoiDto.CapDo,
+                SoCauHoiCon = cauHoiDto.SoCauHoiCon,
+                DoPhanCach = cauHoiDto.DoPhanCach,
+                MaCauHoiCha = cauHoiDto.MaCauHoiCha,
+                XoaTam = cauHoiDto.XoaTam ?? false,
+                SoLanDuocThi = cauHoiDto.SoLanDuocThi ?? 0,
+                SoLanDung = cauHoiDto.SoLanDung ?? 0,
+                CLO = cauHoiDto.CLO,
+                NgayTao = DateTime.UtcNow,
+                NgaySua = DateTime.UtcNow
+            };
+
+            await _dbSet.AddAsync(cauHoi);
+            await _context.SaveChangesAsync();
+
+            foreach (var answerDto in cauHoiDto.CauTraLois)
+            {
+                var cauTraLoi = new CauTraLoi
+                {
+                    MaCauTraLoi = Guid.NewGuid(),
+                    MaCauHoi = cauHoi.MaCauHoi,
+                    NoiDung = answerDto.NoiDung,
+                    ThuTu = answerDto.ThuTu,
+                    LaDapAn = answerDto.LaDapAn,
+                    HoanVi = answerDto.HoanVi
+                };
+
+                await _cauTraLoiRepository.AddAsync(cauTraLoi);
+            }
+
+            var result = new CauHoiDto
+            {
+                MaCauHoi = cauHoi.MaCauHoi,
+                MaPhan = cauHoi.MaPhan,
+                MaSoCauHoi = cauHoi.MaSoCauHoi,
+                NoiDung = cauHoi.NoiDung,
+                HoanVi = cauHoi.HoanVi,
+                CapDo = cauHoi.CapDo,
+                SoCauHoiCon = cauHoi.SoCauHoiCon,
+                DoPhanCach = cauHoi.DoPhanCach,
+                MaCauHoiCha = cauHoi.MaCauHoiCha,
+                XoaTam = cauHoi.XoaTam,
+                SoLanDuocThi = cauHoi.SoLanDuocThi,
+                SoLanDung = cauHoi.SoLanDung,
+                NgayTao = cauHoi.NgayTao,
+                NgaySua = cauHoi.NgaySua,
+                CLO = cauHoi.CLO,
+                CauTraLois = cauHoiDto.CauTraLois.Select(a => new CauTraLoiDto
+                {
+                    MaCauTraLoi = Guid.NewGuid(), // hoặc lấy từ DB nếu cần
+                    MaCauHoi = cauHoi.MaCauHoi,
+                    NoiDung = a.NoiDung,
+                    ThuTu = a.ThuTu,
+                    LaDapAn = a.LaDapAn,
+                    HoanVi = a.HoanVi
+                }).ToList(),
+                CauHoiCons = new List<CauHoiDto>()
+            };
+
+            return result;
         }
-    }
-
-    if (cauHoiDto.CauTraLois.Any())
-    {
-        var correctAnswersCount = cauHoiDto.CauTraLois.Count(a => a.LaDapAn);
-        if (correctAnswersCount > 1)
-        {
-            throw new ArgumentException("Chỉ được phép có một câu trả lời đúng.");
-        }
-    }
-
-    // Không mở transaction ở đây
-    var cauHoi = new CauHoi
-    {
-        MaCauHoi = Guid.NewGuid(),
-        MaPhan = cauHoiDto.MaPhan,
-        MaSoCauHoi = cauHoiDto.MaSoCauHoi,
-        NoiDung = cauHoiDto.NoiDung,
-        HoanVi = cauHoiDto.HoanVi,
-        CapDo = cauHoiDto.CapDo,
-        SoCauHoiCon = cauHoiDto.SoCauHoiCon,
-        DoPhanCach = cauHoiDto.DoPhanCach,
-        MaCauHoiCha = cauHoiDto.MaCauHoiCha,
-        XoaTam = cauHoiDto.XoaTam ?? false,
-        SoLanDuocThi = cauHoiDto.SoLanDuocThi ?? 0,
-        SoLanDung = cauHoiDto.SoLanDung ?? 0,
-        CLO = cauHoiDto.CLO,
-        NgayTao = DateTime.UtcNow,
-        NgaySua = DateTime.UtcNow
-    };
-
-    await _dbSet.AddAsync(cauHoi);
-    await _context.SaveChangesAsync();
-
-    foreach (var answerDto in cauHoiDto.CauTraLois)
-    {
-        var cauTraLoi = new CauTraLoi
-        {
-            MaCauTraLoi = Guid.NewGuid(),
-            MaCauHoi = cauHoi.MaCauHoi,
-            NoiDung = answerDto.NoiDung,
-            ThuTu = answerDto.ThuTu,
-            LaDapAn = answerDto.LaDapAn,
-            HoanVi = answerDto.HoanVi
-        };
-
-        await _cauTraLoiRepository.AddAsync(cauTraLoi);
-    }
-
-    var result = new CauHoiDto
-    {
-        MaCauHoi = cauHoi.MaCauHoi,
-        MaPhan = cauHoi.MaPhan,
-        MaSoCauHoi = cauHoi.MaSoCauHoi,
-        NoiDung = cauHoi.NoiDung,
-        HoanVi = cauHoi.HoanVi,
-        CapDo = cauHoi.CapDo,
-        SoCauHoiCon = cauHoi.SoCauHoiCon,
-        DoPhanCach = cauHoi.DoPhanCach,
-        MaCauHoiCha = cauHoi.MaCauHoiCha,
-        XoaTam = cauHoi.XoaTam,
-        SoLanDuocThi = cauHoi.SoLanDuocThi,
-        SoLanDung = cauHoi.SoLanDung,
-        NgayTao = cauHoi.NgayTao,
-        NgaySua = cauHoi.NgaySua,
-        CLO = cauHoi.CLO,
-        CauTraLois = cauHoiDto.CauTraLois.Select(a => new CauTraLoiDto
-        {
-            MaCauTraLoi = Guid.NewGuid(), // hoặc lấy từ DB nếu cần
-            MaCauHoi = cauHoi.MaCauHoi,
-            NoiDung = a.NoiDung,
-            ThuTu = a.ThuTu,
-            LaDapAn = a.LaDapAn,
-            HoanVi = a.HoanVi
-        }).ToList(),
-        CauHoiCons = new List<CauHoiDto>()
-    };
-
-    return result;
-}
-
-        
         public async Task<CauHoiDto> UpdateWithAnswersAsync(Guid maCauHoi, UpdateCauHoiWithAnswersDto cauHoiDto)
         {
             if (cauHoiDto == null)
