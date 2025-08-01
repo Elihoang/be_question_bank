@@ -45,7 +45,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFileService, FileService>();
         
-        services.AddScoped<WordImportService>();
+        // Nguoi Dung
+        services.AddScoped<INguoiDungRepository, NguoiDungRepository>();
+        services.AddScoped<JwtService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }
