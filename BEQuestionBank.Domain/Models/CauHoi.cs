@@ -35,5 +35,4 @@ public class CauHoi : ModelBase
     public virtual NguoiDung? NguoiDung { get; set; }
     public ICollection<CauTraLoi> CauTraLois { get; set; }
     public ICollection<File> Files { get; set; }
-    public virtual ICollection<DeThi> DeThis { get; set; } = new List<DeThi>();
 }

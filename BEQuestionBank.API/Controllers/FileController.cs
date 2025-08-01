@@ -12,6 +12,7 @@ using File = BEQuestionBank.Domain.Models.File;
 using IOFile = System.IO.File;
 using System.ComponentModel.DataAnnotations;
 using BEQuestionBank.Domain.Enums;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace BEQuestionBank.Core.Controllers
 {
@@ -27,18 +28,10 @@ namespace BEQuestionBank.Core.Controllers
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        /// <summary>
+        
         /// Tải lên một tệp mới liên quan đến câu hỏi hoặc câu trả lời.
-        /// </summary>
-        /// <param name="file">Tệp cần tải lên</param>
-        /// <param name="maCauHoi">Mã câu hỏi (tùy chọn)</param>
-        /// <param name="maCauTraLoi">Mã câu trả lời (tùy chọn)</param>
-        /// <returns>DTO của tệp với thông tin chi tiết</returns>
         [HttpPost("upload")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation("Tai lên tệp")]
         public async Task<IActionResult> UploadFile([Required] IFormFile file, [FromQuery] Guid? maCauHoi, [FromQuery] Guid? maCauTraLoi)
         {
             if (file == null || file.Length == 0)
@@ -64,28 +57,21 @@ namespace BEQuestionBank.Core.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Error = "Đã xảy ra lỗi khi tải lên tệp" });
             }
         }
-
-        /// <summary>
+        
         /// Lấy thông tin tệp theo mã.
-        /// </summary>
-        /// <param name="maFile">Mã tệp</param>
-        /// <returns>DTO của tệp với thông tin chi tiết</returns>
-        [HttpGet("{maFile}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetFile([Required] Guid maFile)
+        [HttpGet("{id}")]
+        [SwaggerOperation("Lấy thông tin tệp theo mã")]
+        public async Task<IActionResult> GetFile([FromRoute] Guid id)
         {
-            if (maFile == Guid.Empty)
+            if (id == Guid.Empty)
             {
-                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}", maFile);
+                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}", id);
                 return BadRequest(new { Error = "Mã tệp hợp lệ là bắt buộc" });
             }
 
             try
             {
-                var file = await _fileService.GetByIdAsync(maFile);
+                var file = await _fileService.GetByIdAsync(id);
                 var fileDto = new FileDto
                 {
                     MaFile = file.MaFile,
@@ -94,28 +80,24 @@ namespace BEQuestionBank.Core.Controllers
                     TenFile = file.TenFile,
                     LoaiFile = file.LoaiFile ?? 0
                 };
-                _logger.LogInformation("Lấy thành công thông tin tệp {FileId}", maFile);
+                _logger.LogInformation("Lấy thành công thông tin tệp {FileId}", id);
                 return Ok(new { Data = fileDto, Message = "Lấy thông tin tệp thành công" });
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Không tìm thấy tệp: {FileId}", maFile);
+                _logger.LogWarning(ex, "Không tìm thấy tệp: {FileId}", id);
                 return NotFound(new { Error = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy thông tin tệp {FileId}", maFile);
+                _logger.LogError(ex, "Lỗi khi lấy thông tin tệp {FileId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Error = "Đã xảy ra lỗi khi lấy thông tin tệp" });
             }
         }
 
-        /// <summary>
         /// Lấy danh sách tất cả các tệp.
-        /// </summary>
-        /// <returns>Danh sách các DTO của tệp</returns>
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [SwaggerOperation("Lấy danh sách tất cả tệp")]
         public async Task<IActionResult> GetAllFiles()
         {
             try
@@ -139,22 +121,15 @@ namespace BEQuestionBank.Core.Controllers
             }
         }
 
-        /// <summary>
+
         /// Cập nhật một tệp hiện có.
-        /// </summary>
-        /// <param name="maFile">Mã tệp</param>
-        /// <param name="newFile">Tệp mới để thay thế tệp hiện tại</param>
-        /// <returns>DTO của tệp đã cập nhật</returns>
-        [HttpPut("{maFile}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateFile([Required] Guid maFile, [Required] IFormFile newFile)
+        [HttpPut("{id}")]
+        [SwaggerOperation("Cập nhật tệp theo mã")]
+        public async Task<IActionResult> UpdateFile([FromRoute] Guid id, [Required] IFormFile newFile)
         {
-            if (maFile == Guid.Empty)
+            if (id == Guid.Empty)
             {
-                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}", maFile);
+                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}",id);
                 return BadRequest(new { Error = "Mã tệp hợp lệ là bắt buộc" });
             }
 
@@ -166,7 +141,7 @@ namespace BEQuestionBank.Core.Controllers
 
             try
             {
-                var existingFile = await _fileService.GetByIdAsync(maFile);
+                var existingFile = await _fileService.GetByIdAsync(id);
                 var extension = Path.GetExtension(newFile.FileName).ToLower();
                 var loaiFile = extension switch
                 {
@@ -205,67 +180,55 @@ namespace BEQuestionBank.Core.Controllers
                     LoaiFile = existingFile.LoaiFile ?? 0
                 };
 
-                _logger.LogInformation("Cập nhật thành công tệp {FileId}", maFile);
+                _logger.LogInformation("Cập nhật thành công tệp {FileId}",id);
                 return Ok(new { Data = fileDto, Message = "Cập nhật tệp thành công" });
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Lỗi khi cập nhật tệp: {FileId}", maFile);
+                _logger.LogWarning(ex, "Lỗi khi cập nhật tệp: {FileId}", id);
                 return BadRequest(new { Error = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật tệp {FileId}", maFile);
+                _logger.LogError(ex, "Lỗi khi cập nhật tệp {FileId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Error = "Đã xảy ra lỗi khi cập nhật tệp" });
             }
         }
-
-        /// <summary>
+        
         /// Xóa một tệp theo mã.
-        /// </summary>
-        /// <param name="maFile">Mã tệp</param>
-        /// <returns>Thông báo xóa thành công</returns>
-        [HttpDelete("{maFile}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> DeleteFile([Required] Guid maFile)
+        [HttpDelete("{id}")]
+        [SwaggerOperation("Xóa tệp vinh vien theo mã")]
+        public async Task<IActionResult> DeleteFile([Required] Guid id)
         {
-            if (maFile == Guid.Empty)
+            if (id == Guid.Empty)
             {
-                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}", maFile);
+                _logger.LogWarning("Mã tệp không hợp lệ: {FileId}", id);
                 return BadRequest(new { Error = "Mã tệp hợp lệ là bắt buộc" });
             }
 
             try
             {
-                var file = await _fileService.GetByIdAsync(maFile);
+                var file = await _fileService.GetByIdAsync(id);
                 await _fileService.DeleteAsync(file);
-                _logger.LogInformation("Xóa thành công tệp {FileId}", maFile);
+                _logger.LogInformation("Xóa thành công tệp {FileId}", id);
                 return Ok(new { Message = "Xóa tệp thành công" });
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Không tìm thấy tệp để xóa: {FileId}", maFile);
+                _logger.LogWarning(ex, "Không tìm thấy tệp để xóa: {FileId}", id);
                 return NotFound(new { Error = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xóa tệp {FileId}", maFile);
+                _logger.LogError(ex, "Lỗi khi xóa tệp {FileId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new { Error = "Đã xảy ra lỗi khi xóa tệp" });
             }
         }
-
-        /// <summary>
+        
         /// Tìm kiếm tệp theo mã câu hỏi.
-        /// </summary>
-        /// <param name="maCauHoi">Mã câu hỏi (tùy chọn)</param>
-        /// <returns>Danh sách các DTO của tệp</returns>
-        [HttpGet("search")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> FindFiles([FromQuery] Guid? maCauHoi)
+        [HttpGet("CauHoi/{maCauHoi}")]
+        [SwaggerOperation("Tìm kiếm tệp theo mã câu hỏi")]
+        public async Task<IActionResult> FindFiles([FromRoute] Guid maCauHoi)
         {
             try
             {

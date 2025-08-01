@@ -11,8 +11,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace BEQuestionBank.Core.Services
 {
@@ -91,31 +93,34 @@ namespace BEQuestionBank.Core.Services
             var audioRegex = new Regex(@"\[<audio>\](.*?)\[</audio>\]");
             var currentQuestion = new QuestionData();
             var paragraphs = document.GetChildNodes(NodeType.Paragraph, true).Cast<Paragraph>();
-            int imageIndex = 0;
 
-            // Trích xuất hình ảnh nhúng
+            // Trích xuất hình ảnh nhúng và tạo mapping với vị trí
+            var imageMapping = new Dictionary<Shape, string>();
             var images = document.GetChildNodes(NodeType.Shape, true)
                 .Cast<Shape>()
                 .Where(s => s.HasImage)
                 .ToList();
-            var imageFiles = new List<FileData>();
+
             foreach (var shape in images)
             {
-                var imageFileName = $"image_{Guid.NewGuid()}.png";
-                imageFiles.Add(new FileData
-                {
-                    FileName = imageFileName,
-                    FileType = FileType.Image,
-                    ImageData = shape.ImageData.ImageBytes
-                });
-                _logger.LogInformation("Đã trích xuất hình ảnh nhúng: {FileName}", imageFileName);
+                var imageBytes = shape.ImageData.ImageBytes;
+                var mimeType = GetMimeType(shape.ImageData.ImageType); // Hàm xác định MIME type
+                var base64Image = Convert.ToBase64String(imageBytes);
+                var imgTag = $"<img src=\"data:{mimeType};base64,{base64Image}\" alt=\"Question Image\" style=\"max-width: 100%; height: auto;\" />";
+                imageMapping[shape] = imgTag;
+                _logger.LogInformation("Đã tạo base64 cho hình ảnh nhúng, MIME: {MimeType}", mimeType);
             }
 
             foreach (var paragraph in paragraphs)
             {
                 var runs = paragraph.GetChildNodes(NodeType.Run, true).Cast<Run>();
+                var shapes = paragraph.GetChildNodes(NodeType.Shape, true).Cast<Shape>();
                 var text = string.Join("", runs.Select(r => r.GetText()).Where(t => !string.IsNullOrWhiteSpace(t))).Trim();
-                if (string.IsNullOrEmpty(text)) continue;
+
+                // Tạo nội dung HTML cho đoạn văn
+                var htmlContent = BuildHtmlContent(paragraph, imageMapping);
+
+                if (string.IsNullOrEmpty(text) && string.IsNullOrEmpty(htmlContent)) continue;
 
                 _logger.LogDebug("Phân tích đoạn văn: {Text}", text);
 
@@ -125,67 +130,40 @@ namespace BEQuestionBank.Core.Services
                 {
                     if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
                     {
-                        currentQuestion.Files.AddRange(imageFiles.Where(f => !questions.Any(q => q.Files.Contains(f))));
                         questions.Add(currentQuestion);
                         currentQuestion = new QuestionData();
                     }
                     currentQuestion.CLO = clo;
-                    currentQuestion.NoiDung = text.Substring(cloMatch.Length).Trim();
+
+                    // Lấy nội dung sau CLO
+                    var questionText = text.Substring(cloMatch.Length).Trim();
+                    var questionHtml = !string.IsNullOrEmpty(questionText) ? $"<p>{HttpUtility.HtmlEncode(questionText)}</p>" : "";
+
+                    // Thêm hình ảnh ngay sau nội dung CLO nếu có
+                    var paragraphImages = GetImagesInParagraph(paragraph, imageMapping);
+                    currentQuestion.NoiDung = questionHtml + paragraphImages;
+
                     _logger.LogInformation("Đã tìm thấy câu hỏi: {NoiDung}", currentQuestion.NoiDung);
                     continue;
                 }
-
                 // Xác định đáp án với định dạng A., B., C., D.
-                bool isAnswer = false;
-                var answerTextBuilder = new System.Text.StringBuilder();
-                char? answerKey = null;
-                bool isCorrectAnswer = false; // Biến để xác định đáp án đúng
-                foreach (var run in runs)
+                var answerInfo = ParseAnswerFromParagraph(paragraph, runs);
+                if (answerInfo != null)
                 {
-                    var runText = run.GetText().Trim();
+                    // Wrap nội dung đáp án trong thẻ p và mã hóa HTML
+                    var answerHtml = $"<p>{HttpUtility.HtmlEncode(answerInfo.Content)}</p>";
+                    var answerImages = GetImagesInParagraph(paragraph, imageMapping);
 
-                    // Nhận dạng dòng bắt đầu bằng "A.", "B.",...
-                    if (runText.Length >= 2 && "ABCD".Contains(runText[0]) && runText[1] == '.')
-                    {
-                        answerKey = runText[0];
-                        answerTextBuilder.Clear();
-                        isAnswer = true;
-
-                        // Kiểm tra xem đáp án có được gạch chân hoặc in đậm không để xác định đáp án đúng
-                        isCorrectAnswer = run.Font.Underline != Underline.None || run.Font.Bold;
-
-                        // Nếu có nội dung phía sau "A.", thêm luôn
-                        if (runText.Length > 2)
-                        {
-                            answerTextBuilder.Append(runText.Substring(2).TrimStart());
-                        }
-
-                        continue;
-                    }
-
-                    // Nếu đang trong đáp án, tiếp tục gom nội dung
-                    if (isAnswer)
-                    {
-                        answerTextBuilder.Append(" " + runText);
-                    }
-                }
-
-                if (isAnswer && answerKey != null)
-                {
-                    var answerText = answerTextBuilder.ToString().Trim();
-                    var isItalic = runs.Any(r => r.Font.Italic);
                     var answer = new AnswerData
                     {
-                        NoiDung = answerText,
+                        NoiDung = answerHtml + answerImages,
                         ThuTu = currentQuestion.Answers.Count + 1,
-                        LaDapAn = isCorrectAnswer || answerText.Contains("Correct", StringComparison.OrdinalIgnoreCase),
-                        HoanVi = isItalic
+                        LaDapAn = answerInfo.IsCorrect,
+                        HoanVi = answerInfo.IsItalic
                     };
                     currentQuestion.Answers.Add(answer);
-                    _logger.LogInformation("Đã thêm đáp án: {Key}_ {NoiDung}, LaDapAn: {LaDapAn}, HoanVi: {HoanVi}",
-                        answerKey, answer.NoiDung, answer.LaDapAn, answer.HoanVi);
-                    isAnswer = false;
-                    answerKey = null;
+                    _logger.LogInformation("Đã thêm đáp án: {Key} {NoiDung}, LaDapAn: {LaDapAn}, HoanVi: {HoanVi}",
+                        answerInfo.Key, answer.NoiDung, answer.LaDapAn, answer.HoanVi);
                     continue;
                 }
 
@@ -204,12 +182,19 @@ namespace BEQuestionBank.Core.Services
                 {
                     currentQuestion.Files.Add(new FileData { FileName = text, FileType = FileType.Image });
                     _logger.LogInformation("Đã tìm thấy tệp hình ảnh tham chiếu: {FileName}", text);
+                    continue;
+                }
+
+                // Nếu là nội dung thường, thêm vào câu hỏi hiện tại với thẻ p
+                if (!string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(currentQuestion.NoiDung))
+                {
+                    var additionalContent = $"<p>{text}</p>" + GetImagesInParagraph(paragraph, imageMapping);
+                    currentQuestion.NoiDung += additionalContent;
                 }
             }
 
             if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
             {
-                currentQuestion.Files.AddRange(imageFiles.Where(f => !questions.Any(q => q.Files.Contains(f))));
                 questions.Add(currentQuestion);
                 _logger.LogInformation("Đã thêm câu hỏi cuối: {NoiDung}", currentQuestion.NoiDung);
             }
@@ -224,123 +209,237 @@ namespace BEQuestionBank.Core.Services
             return questions;
         }
 
-        private async Task SaveQuestionsToDatabaseAsync(List<QuestionData> questions, Guid maPhan, string? mediaFolderPath, ImportResult result)
+        private string BuildHtmlContent(Paragraph paragraph, Dictionary<Shape, string> imageMapping)
         {
-            if (!questions.Any())
+            var content = new StringBuilder();
+            var runs = paragraph.GetChildNodes(NodeType.Run, true).Cast<Run>();
+            var text = string.Join("", runs.Select(r => r.GetText()).Where(t => !string.IsNullOrWhiteSpace(t))).Trim();
+
+            if (!string.IsNullOrEmpty(text))
             {
-                _logger.LogWarning("Danh sách câu hỏi rỗng, không có dữ liệu để lưu.");
-                result.Errors.Add("Không có câu hỏi nào để lưu.");
-                return;
+                // Mã hóa HTML để xử lý ký tự đặc biệt
+                content.Append($"<p>{HttpUtility.HtmlEncode(text)}</p>");
             }
 
-            var batches = questions.Chunk(BatchSize);
+            // Thêm hình ảnh trong đoạn văn
+            content.Append(GetImagesInParagraph(paragraph, imageMapping));
 
-            // Sử dụng giao dịch toàn cục
-            using var transaction = await _cauHoiRepository.BeginTransactionAsync();
-            try
+            return content.ToString();
+        }
+
+        private string GetImagesInParagraph(Paragraph paragraph, Dictionary<Shape, string> imageMapping)
+        {
+            var imageHtml = new StringBuilder();
+            var shapes = paragraph.GetChildNodes(NodeType.Shape, true).Cast<Shape>();
+
+            foreach (var shape in shapes)
             {
-                foreach (var batch in batches)
+                if (imageMapping.TryGetValue(shape, out var imgTag))
                 {
-                    foreach (var question in batch)
+                    imageHtml.Append(imgTag);
+                }
+            }
+
+            return imageHtml.ToString();
+        }
+
+        private AnswerInfo ParseAnswerFromParagraph(Paragraph paragraph, IEnumerable<Run> runs)
+        {
+            var answerTextBuilder = new StringBuilder();
+            char? answerKey = null;
+            bool isCorrectAnswer = false;
+            bool isAnswer = false;
+
+            foreach (var run in runs)
+            {
+                var runText = run.GetText().Trim();
+
+                // Nhận dạng dòng bắt đầu bằng "A.", "B.",...
+                if (runText.Length >= 2 && "ABCD".Contains(runText[0]) && runText[1] == '.')
+                {
+                    answerKey = runText[0];
+                    answerTextBuilder.Clear();
+                    isAnswer = true;
+
+                    // Kiểm tra xem đáp án có được gạch chân hoặc in đậm không để xác định đáp án đúng
+                    isCorrectAnswer = run.Font.Underline != Underline.None || run.Font.Bold;
+
+                    // Nếu có nội dung phía sau "A.", thêm luôn
+                    if (runText.Length > 2)
                     {
-                        var cauHoiDto = new CreateCauHoiWithAnswersDto
+                        answerTextBuilder.Append(runText.Substring(2).TrimStart());
+                    }
+                    continue;
+                }
+
+                // Nếu đang trong đáp án, tiếp tục gom nội dung
+                if (isAnswer)
+                {
+                    answerTextBuilder.Append(" " + runText);
+                }
+            }
+
+            if (isAnswer && answerKey != null)
+            {
+                var answerText = answerTextBuilder.ToString().Trim();
+                var isItalic = runs.Any(r => r.Font.Italic);
+
+                return new AnswerInfo
+                {
+                    Key = answerKey.Value,
+                    Content = answerText,
+                    IsCorrect = isCorrectAnswer || answerText.Contains("Correct", StringComparison.OrdinalIgnoreCase),
+                    IsItalic = isItalic
+                };
+            }
+
+            return null;
+        }
+
+        // Helper class để lưu thông tin đáp án
+        private class AnswerInfo
+        {
+            public char Key { get; set; }
+            public string Content { get; set; }
+            public bool IsCorrect { get; set; }
+            public bool IsItalic { get; set; }
+        } 
+        
+        private async Task SaveQuestionsToDatabaseAsync(List<QuestionData> questions, Guid maPhan, string? mediaFolderPath, ImportResult result)
+{
+    if (!questions.Any())
+    {
+        _logger.LogWarning("Danh sách câu hỏi rỗng, không có dữ liệu để lưu.");
+        result.Errors.Add("Không có câu hỏi nào để lưu.");
+        return;
+    }
+
+    var batches = questions.Chunk(BatchSize);
+
+    // Sử dụng giao dịch toàn cục
+    using var transaction = await _cauHoiRepository.BeginTransactionAsync();
+    try
+    {
+        foreach (var batch in batches)
+        {
+            foreach (var question in batch)
+            {
+                var cauHoiDto = new CreateCauHoiWithAnswersDto
+                {
+                    MaPhan = maPhan,
+                    MaSoCauHoi = await GenerateMaSoCauHoiAsync(),
+                    NoiDung = question.NoiDung,
+                    HoanVi = question.Answers.Any(a => a.HoanVi),
+                    CapDo = 1,
+                    SoCauHoiCon = 0,
+                    DoPhanCach = 0,
+                    XoaTam = false,
+                    SoLanDuocThi = 0,
+                    SoLanDung = 0,
+                    CLO = question.CLO,
+                    CauTraLois = question.Answers.Select(a => new CreateCauTraLoiDto
+                    {
+                        NoiDung = a.NoiDung,
+                        ThuTu = a.ThuTu,
+                        LaDapAn = a.LaDapAn,
+                        HoanVi = a.HoanVi,
+                        MaCauHoi = Guid.Empty
+                    }).ToList(),
+                    Files = question.Files.Select(f => new FileDto
+                    {
+                        TenFile = f.FileName,
+                        LoaiFile = f.FileType,
+                        MaCauHoi = Guid.Empty
+                    }).ToList()
+                };
+
+                // Ghi log để theo dõi
+                _logger.LogInformation("Đang lưu câu hỏi: {NoiDung}", cauHoiDto.NoiDung);
+
+                var addedCauHoi = await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
+
+                foreach (var cauTraLoi in cauHoiDto.CauTraLois)
+                {
+                    cauTraLoi.MaCauHoi = addedCauHoi.MaCauHoi;
+                }
+                foreach (var file in cauHoiDto.Files)
+                {
+                    file.MaCauHoi = addedCauHoi.MaCauHoi;
+                }
+
+                foreach (var file in question.Files)
+                {
+                    var destinationPath = Path.Combine(_storagePath, file.FileName);
+                    try
+                    {
+                        if (file.ImageData != null)
                         {
-                            MaPhan = maPhan,
-                            MaSoCauHoi = await GenerateMaSoCauHoiAsync(),
-                            NoiDung = question.NoiDung,
-                            HoanVi = question.Answers.Any(a => a.HoanVi),
-                            CapDo = 1,
-                            SoCauHoiCon = 0,
-                            DoPhanCach = 0,
-                            XoaTam = false,
-                            SoLanDuocThi = 0,
-                            SoLanDung = 0,
-                            CLO = question.CLO,
-                            CauTraLois = question.Answers.Select(a => new CreateCauTraLoiDto
-                            {
-                                NoiDung = a.NoiDung,
-                                ThuTu = a.ThuTu,
-                                LaDapAn = a.LaDapAn,
-                                HoanVi = a.HoanVi,
-                                MaCauHoi = Guid.Empty
-                            }).ToList(),
-                            Files = question.Files.Select(f => new FileDto
-                            {
-                                TenFile = f.FileName,
-                                LoaiFile = f.FileType,
-                                MaCauHoi = Guid.Empty
-                            }).ToList()
-                        };
-
-                        // Ghi log để theo dõi
-                        _logger.LogInformation("Đang lưu câu hỏi: {NoiDung}", cauHoiDto.NoiDung);
-
-                        var addedCauHoi = await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
-
-                        foreach (var cauTraLoi in cauHoiDto.CauTraLois)
-                        {
-                            cauTraLoi.MaCauHoi = addedCauHoi.MaCauHoi;
+                            // Lưu hình ảnh nhúng
+                            await File.WriteAllBytesAsync(destinationPath, file.ImageData);
+                            result.SuccessCount++;
+                            _logger.LogInformation("Lưu hình ảnh nhúng {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
                         }
-                        foreach (var file in cauHoiDto.Files)
+                        else if (!string.IsNullOrEmpty(mediaFolderPath))
                         {
-                            file.MaCauHoi = addedCauHoi.MaCauHoi;
+                            // Lưu tệp hình ảnh không nhúng và tạo thẻ <img>
+                            var fullPath = Path.Combine(mediaFolderPath, file.FileName);
+                            if (File.Exists(fullPath))
+                            {
+                                File.Copy(fullPath, destinationPath, true);
+                                var relativePath = Path.Combine("media", file.FileName).Replace("\\", "/");
+                                // Cập nhật FileName thành thẻ <img> để lưu vào cơ sở dữ liệu
+                                cauHoiDto.Files.FirstOrDefault(f => f.TenFile == file.FileName).TenFile = 
+                                    $"<img src=\"{relativePath}\" alt=\"Question Image\" style=\"max-width: 100%; height: auto;\" />";
+                                result.SuccessCount++;
+                                _logger.LogInformation("Tải lên tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Tệp không tồn tại: {FilePath}", fullPath);
+                                result.Errors.Add($"Tệp không tồn tại: {file.FileName}");
+                            }
                         }
-
-                        foreach (var file in question.Files)
+                        else
                         {
-                            var destinationPath = Path.Combine(_storagePath, file.FileName);
-                            try
-                            {
-                                if (file.ImageData != null)
-                                {
-                                    await File.WriteAllBytesAsync(destinationPath, file.ImageData);
-                                    result.SuccessCount++;
-                                    _logger.LogInformation("Lưu hình ảnh nhúng {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                }
-                                else if (!string.IsNullOrEmpty(mediaFolderPath))
-                                {
-                                    var fullPath = Path.Combine(mediaFolderPath, file.FileName);
-                                    if (File.Exists(fullPath))
-                                    {
-                                        File.Copy(fullPath, destinationPath, true);
-                                        result.SuccessCount++;
-                                        _logger.LogInformation("Tải lên tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning("Tệp không tồn tại: {FilePath}", fullPath);
-                                        result.Errors.Add($"Tệp không tồn tại: {file.FileName}");
-                                    }
-                                }
-                                else
-                                {
-                                    _logger.LogWarning("Không có mediaFolderPath cho tệp không nhúng: {FileName}", file.FileName);
-                                    result.Errors.Add($"Không tìm thấy mediaFolderPath cho tệp: {file.FileName}");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogError(ex, "Lỗi khi lưu tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
-                                result.Errors.Add($"Lỗi khi lưu tệp {file.FileName}: {ex.Message}");
-                            }
+                            _logger.LogWarning("Không có mediaFolderPath cho tệp không nhúng: {FileName}", file.FileName);
+                            result.Errors.Add($"Không tìm thấy mediaFolderPath cho tệp: {file.FileName}");
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Lỗi khi lưu tệp {FileName} cho câu hỏi {MaCauHoi}", file.FileName, addedCauHoi.MaCauHoi);
+                        result.Errors.Add($"Lỗi khi lưu tệp {file.FileName}: {ex.Message}");
+                    }
                 }
-                await transaction.CommitAsync();
-                _logger.LogInformation("Lưu tất cả batch thành công. Tổng số câu hỏi: {SuccessCount}", result.SuccessCount);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Lỗi khi lưu batch câu hỏi: {Message}", ex.Message);
-                result.Errors.Add($"Lỗi khi lưu batch câu hỏi: {ex.Message}");
             }
         }
+        await transaction.CommitAsync();
+        _logger.LogInformation("Lưu tất cả batch thành công. Tổng số câu hỏi: {SuccessCount}", result.SuccessCount);
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        _logger.LogError(ex, "Lỗi khi lưu batch câu hỏi: {Message}", ex.Message);
+        result.Errors.Add($"Lỗi khi lưu batch câu hỏi: {ex.Message}");
+    }
+}
 
         private async Task<int> GenerateMaSoCauHoiAsync()
         {
             var lastCauHoi = (await _cauHoiRepository.GetAllAsync()).OrderByDescending(c => c.MaSoCauHoi).FirstOrDefault();
             return (lastCauHoi?.MaSoCauHoi ?? 0) + 1;
+        }
+
+        private string GetMimeType(ImageType imageType)
+        {
+            switch (imageType)
+            {
+                case ImageType.Png: return "image/png";
+                case ImageType.Jpeg: return "image/jpeg";
+                case ImageType.Bmp: return "image/bmp";
+                case ImageType.Gif: return "image/gif";
+                default: return "image/png"; // Mặc định nếu không xác định được
+            }
         }
     }
 
