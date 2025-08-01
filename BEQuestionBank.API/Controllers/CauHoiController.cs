@@ -7,6 +7,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using BEQuestionBank.Core.Services;
 using BEQuestionBank.Domain.Enums;
 
 namespace BEQuestionBank.API.Controllers
@@ -16,11 +17,13 @@ namespace BEQuestionBank.API.Controllers
     public class CauHoiController : ControllerBase
     {
         private readonly ICauHoiService _service;
+        private readonly WordImportService _wordImportService;
         private readonly ILogger<CauHoiController> _logger;
 
-        public CauHoiController(ICauHoiService service, ILogger<CauHoiController> logger)
+        public CauHoiController(ICauHoiService service,WordImportService wordImportService, ILogger<CauHoiController> logger)
         {
             _service = service;
+            _wordImportService = wordImportService;
             _logger = logger;
         }
 
@@ -538,6 +541,34 @@ namespace BEQuestionBank.API.Controllers
             {
                 _logger.LogError(ex, "Lỗi khi cập nhật câu hỏi kèm câu trả lời với ID: {Id}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi cập nhật câu hỏi và câu trả lời.");
+            }
+        }
+        [HttpPost("ImportWord")]
+        [SwaggerOperation(Summary = "Nhập câu hỏi từ tệp Word")]
+        public async Task<ActionResult<ImportResult>> ImportWordAsync(IFormFile wordFile, [FromQuery] Guid maPhan, [FromQuery] string? mediaFolderPath = null)
+        {
+            if (wordFile == null || wordFile.Length == 0)
+            {
+                _logger.LogWarning("Tệp Word không hợp lệ.");
+                return StatusCode(StatusCodes.Status400BadRequest, new ImportResult { Errors = new List<string> { "Tệp Word là bắt buộc và không được rỗng." } });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Dữ liệu đầu vào không hợp lệ: {Errors}", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+            }
+
+            try
+            {
+                var result = await _wordImportService.ImportQuestionsAsync(wordFile, maPhan, mediaFolderPath);
+                _logger.LogInformation("Nhập {SuccessCount} câu hỏi thành công từ tệp Word.", result.SuccessCount);
+                return StatusCode(StatusCodes.Status200OK, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi nhập câu hỏi từ tệp Word.");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ImportResult { Errors = new List<string> { "Đã xảy ra lỗi khi nhập câu hỏi." } });
             }
         }
     }
