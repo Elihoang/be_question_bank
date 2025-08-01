@@ -45,6 +45,7 @@ public static class ServiceCollectionExtensions
         // File
         services.AddScoped<IFileRepository, FileRepository>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<WordImportService>();
         
         // Nguoi Dung
         services.AddScoped<INguoiDungRepository, NguoiDungRepository>();
@@ -55,7 +56,8 @@ public static class ServiceCollectionExtensions
         //De Thi
         services.AddScoped<IDeThiRepository, DeThiRepository>();
         services.AddScoped<IDeThiService, DeThiService>();
-
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserService, UserService>();
         return services;
     }
 }
