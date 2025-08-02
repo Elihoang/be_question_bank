@@ -103,7 +103,7 @@ namespace BEQuestionBank.Core.Services
             var user = await _nguoiDungRepository.FirstOrDefaultAsync(u => u.TenDangNhap == forgotPasswordDto.TenDangNhap);
             if (user == null || user.Email != forgotPasswordDto.Email) return false;
 
-            user.MaKhoa = Guid.NewGuid().ToString();
+            user.MaKhoa = Guid.NewGuid();
             await _nguoiDungRepository.UpdateAsync(user);
 
             // Gửi email với MaKhoa (cần tích hợp email service)

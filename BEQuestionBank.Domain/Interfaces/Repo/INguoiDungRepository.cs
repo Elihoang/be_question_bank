@@ -11,8 +11,8 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
     public interface INguoiDungRepository : IRepository<NguoiDung>
     {
         Task<IEnumerable<NguoiDung>> GetByVaiTroAsync(VaiTroNguoiDung vaiTro);
-        Task<IEnumerable<NguoiDung>> GetByKhoaAsync(string maKhoa);
+        Task<IEnumerable<NguoiDung>> GetByKhoaAsync(Guid maKhoa);
         Task<bool> IsLockedAsync(string tenDangNhap);
-        Task<NguoiDung> GetByResetCodeAsync(string maKhoa);
+        Task<NguoiDung> GetByResetCodeAsync(Guid maKhoa);
     }
 }

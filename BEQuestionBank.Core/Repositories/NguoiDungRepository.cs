@@ -23,7 +23,12 @@ namespace BEQuestionBank.Core.Repositories
             return await _dbSet.AsNoTracking().Where(nd => nd.VaiTro == vaiTro).ToListAsync();
         }
 
-        public async Task<IEnumerable<NguoiDung>> GetByKhoaAsync(string maKhoa)
+        public Task<IEnumerable<NguoiDung>> GetByKhoaAsync(string maKhoa)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<IEnumerable<NguoiDung>> GetByKhoaAsync(Guid maKhoa)
         {
             return await _dbSet.AsNoTracking().Where(nd => nd.MaKhoa == maKhoa).ToListAsync();
         }
@@ -34,7 +39,7 @@ namespace BEQuestionBank.Core.Repositories
             return user?.BiKhoa ?? false;
         }
 
-        public async Task<NguoiDung> GetByResetCodeAsync(string maKhoa)
+        public async Task<NguoiDung> GetByResetCodeAsync(Guid maKhoa)
         {
             return await _dbSet.AsNoTracking().FirstOrDefaultAsync(nd => nd.MaKhoa == maKhoa) ?? throw new Exception("Invalid reset code");
         }
