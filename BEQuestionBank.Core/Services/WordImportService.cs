@@ -18,6 +18,7 @@ using ImageMagick;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.IO.Compression;
+using System.Diagnostics;
 
 namespace BEQuestionBank.Core.Services
 {
@@ -202,62 +203,94 @@ namespace BEQuestionBank.Core.Services
 
         private async Task ProcessImages(MainDocumentPart mainPart, Dictionary<string, string> imageMapping)
         {
-            try
+            foreach (var imagePart in mainPart.ImageParts)
             {
-                foreach (var imagePart in mainPart.ImageParts)
+                var relId = mainPart.GetIdOfPart(imagePart);
+                byte[] imageBytes;
+
+                using (var imgStream = imagePart.GetStream())
+                using (var ms = new MemoryStream())
                 {
-                    var relId = mainPart.GetIdOfPart(imagePart);
-                    byte[] imageBytes;
+                    await imgStream.CopyToAsync(ms);
+                    imageBytes = ms.ToArray();
+                }
 
-                    using (var imgStream = imagePart.GetStream())
-                    using (var ms = new MemoryStream())
-                    {
-                        await imgStream.CopyToAsync(ms);
-                        imageBytes = ms.ToArray();
-                    }
+                if (imageBytes.Length == 0)
+                {
+                    _logger.LogWarning("Dữ liệu hình ảnh trống hoặc không hợp lệ với relId: {RelId}", relId);
+                    continue;
+                }
 
-                    if (imageBytes.Length == 0)
-                    {
-                        _logger.LogWarning("Empty or invalid image data for relId: {RelId}", relId);
-                        continue;
-                    }
+                string mimeType = imagePart.ContentType;
+                _logger.LogInformation("Ảnh relId={RelId} có mimeType: {MimeType}", relId, mimeType);
 
-                    string mimeType = imagePart.ContentType;
-                    _logger.LogInformation("Processing image relId={RelId}, mimeType={MimeType}, size={Size} bytes", relId, mimeType, imageBytes.Length);
-
-                    if (!mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        _logger.LogWarning("Invalid image format: {ContentType}, relId: {RelId}", mimeType, relId);
-                        continue;
-                    }
-
+                try
+                {
+                    // Convert WMF to PNG using Inkscape
                     if (mimeType.Equals("image/x-wmf", StringComparison.OrdinalIgnoreCase))
                     {
+                        _logger.LogInformation("Chuyển đổi WMF sang PNG bằng Inkscape cho relId: {RelId}", relId);
+
+                        var tempWmf = Path.GetTempFileName() + ".wmf";
+                        var tempPng = Path.GetTempFileName() + ".png";
+
                         try
                         {
-                            _logger.LogInformation("Converting WMF to PNG using ImageMagick.");
-                            using var image = new MagickImage(imageBytes);
-                            image.Format = MagickFormat.Png;
-                            imageBytes = image.ToByteArray();
+                            File.WriteAllBytes(tempWmf, imageBytes);
+
+                            var psi = new ProcessStartInfo
+                            {
+                                FileName = "inkscape",
+                                Arguments = $"\"{tempWmf}\" --export-type=png --export-filename=\"{tempPng}\"",
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
+
+                            using (var proc = Process.Start(psi))
+                            {
+                                await proc.WaitForExitAsync();
+
+                                if (proc.ExitCode != 0)
+                                {
+                                    var error = await proc.StandardError.ReadToEndAsync();
+                                    throw new InvalidOperationException($"Inkscape conversion failed: {error}");
+                                }
+                            }
+
+                            if (!File.Exists(tempPng))
+                            {
+                                throw new FileNotFoundException("Inkscape không tạo được file PNG.");
+                            }
+
+                            // Read converted PNG data
+                            imageBytes = await File.ReadAllBytesAsync(tempPng);
                             mimeType = "image/png";
+
+                            _logger.LogInformation("Chuyển đổi WMF thành công cho relId: {RelId}", relId);
                         }
-                        catch (Exception ex)
+                        finally
                         {
-                            _logger.LogWarning(ex, "Failed to convert WMF to PNG for relId: {RelId}", relId);
-                            imageMapping[relId] = "<img src='placeholder.png' alt='Failed to convert WMF' />";
-                            continue;
+                            // Clean up temp files
+                            if (File.Exists(tempWmf)) File.Delete(tempWmf);
+                            if (File.Exists(tempPng)) File.Delete(tempPng);
                         }
                     }
 
+                    // Create Base64 image tag for embedding in HTML
                     var base64Image = Convert.ToBase64String(imageBytes);
                     var imgTag = $@"<img src=""data:{mimeType};base64,{base64Image}"" alt=""Question Image"" style=""max-width: 100%; height: auto;"" />";
+
                     imageMapping[relId] = imgTag;
+
+                    _logger.LogInformation("Đã xử lý thành công ảnh relId: {RelId} với kích thước: {Size} bytes", relId, imageBytes.Length);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing images in Word document.");
-                throw;
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Không thể xử lý ảnh relId: {RelId}", relId);
+                    imageMapping[relId] = "<img src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y0ZjRmNCIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSI+SW1hZ2UgTG9hZCBFcnJvcjwvdGV4dD48L3N2Zz4=' alt='Failed to load image' style='max-width: 100%; height: auto;' />";
+                }
             }
         }
 
@@ -271,25 +304,51 @@ namespace BEQuestionBank.Core.Services
             string text = string.Join("", para.Descendants<Text>().Select(t => t.Text)).Trim();
             string htmlText = !string.IsNullOrEmpty(text) ? $"<p>{HttpUtility.HtmlEncode(text)}</p>" : "";
 
+            // Process images in this paragraph (including WMF converted images)
             var imgs = string.Join("",
                 para.Descendants<DocumentFormat.OpenXml.Drawing.Blip>()
                     .Select(b => b.Embed?.Value)
-                    .Where(relId => relId != null && imageMapping.ContainsKey(relId))
+                    .Where(relId => !string.IsNullOrEmpty(relId) && imageMapping.ContainsKey(relId))
                     .Select(relId => imageMapping[relId])
+                .Concat(
+                    para.Descendants<DocumentFormat.OpenXml.Vml.ImageData>() // WMF/VML images
+                        .Select(vmlImg => vmlImg.RelationshipId?.Value)
+                        .Where(relId => !string.IsNullOrEmpty(relId) && imageMapping.ContainsKey(relId))
+                        .Select(relId => imageMapping[relId])
+                )
             );
+
+
+            // Log if images are found
+            if (!string.IsNullOrEmpty(imgs))
+            {
+                _logger.LogInformation("Tìm thấy {Count} ảnh trong paragraph với text: {Text}",
+                    para.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Count(),
+                    text.Length > 50 ? text.Substring(0, 50) + "..." : text);
+            }
 
             if (string.IsNullOrEmpty(text) && string.IsNullOrEmpty(imgs))
                 return (false, currentQuestion);
 
+            // Check for CLO pattern (new question)
             var cloMatch = cloRegex.Match(text);
             if (cloMatch.Success && Enum.TryParse<EnumCLO>($"CLO{cloMatch.Groups[1].Value}", out var clo))
             {
                 var newQuestion = new QuestionData { CLO = clo };
                 var questionText = text.Substring(cloMatch.Length).Trim();
-                newQuestion.NoiDung = $"<p>{HttpUtility.HtmlEncode(questionText)}{imgs}</p>";
+
+                // Combine question text with images
+                newQuestion.NoiDung = !string.IsNullOrEmpty(questionText)
+                    ? $"<p>{HttpUtility.HtmlEncode(questionText)}</p>{imgs}"
+                    : imgs;
+
+                _logger.LogInformation("Tạo câu hỏi mới với CLO: {CLO}, có {ImageCount} ảnh",
+                    clo, string.IsNullOrEmpty(imgs) ? 0 : imgs.Split("<img").Length - 1);
+
                 return (true, newQuestion);
             }
 
+            // Check for answer options (A., B., C., D.)
             if (text.Length >= 2 && "ABCD".Contains(text[0]) && text[1] == '.')
             {
                 var answerKey = text[0];
@@ -298,16 +357,25 @@ namespace BEQuestionBank.Core.Services
                 bool isUnderline = para.Descendants<RunProperties>().Any(rp => rp.Underline != null);
                 bool isItalic = para.Descendants<RunProperties>().Any(rp => rp.Italic != null);
 
+                var answerHtml = !string.IsNullOrEmpty(answerContent)
+                    ? $"<p>{HttpUtility.HtmlEncode(answerContent)}</p>{imgs}"
+                    : imgs;
+
                 currentQuestion.Answers.Add(new AnswerData
                 {
                     ThuTu = currentQuestion.Answers.Count + 1,
-                    NoiDung = $"<p>{HttpUtility.HtmlEncode(answerContent)}{imgs}</p>",
+                    NoiDung = answerHtml,
                     LaDapAn = isUnderline,
                     HoanVi = isItalic
                 });
+
+                _logger.LogInformation("Thêm đáp án {AnswerKey} với {ImageCount} ảnh, LaDapAn: {IsCorrect}",
+                    answerKey, string.IsNullOrEmpty(imgs) ? 0 : imgs.Split("<img").Length - 1, isUnderline);
+
                 return (false, currentQuestion);
             }
 
+            // Check for audio files
             var audioMatch = audioRegex.Match(text);
             if (audioMatch.Success)
             {
@@ -319,6 +387,7 @@ namespace BEQuestionBank.Core.Services
                 return (false, currentQuestion);
             }
 
+            // Check for image files
             if (text.EndsWith(".unknown", StringComparison.OrdinalIgnoreCase))
             {
                 currentQuestion.Files.Add(new FileData
@@ -329,9 +398,14 @@ namespace BEQuestionBank.Core.Services
                 return (false, currentQuestion);
             }
 
+            // Append to current question content
             if (!string.IsNullOrEmpty(currentQuestion.NoiDung))
             {
                 currentQuestion.NoiDung += htmlText + imgs;
+            }
+            else if (!string.IsNullOrEmpty(htmlText) || !string.IsNullOrEmpty(imgs))
+            {
+                currentQuestion.NoiDung = htmlText + imgs;
             }
 
             return (false, currentQuestion);
@@ -351,59 +425,69 @@ namespace BEQuestionBank.Core.Services
             using var transaction = await _cauHoiRepository.BeginTransactionAsync();
             try
             {
-                await Parallel.ForEachAsync(batches, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (batch, ct) =>
+                foreach (var batch in batches)
                 {
                     foreach (var question in batch)
                     {
-                        var cauHoiDto = new CreateCauHoiWithAnswersDto
+                        try
                         {
-                            MaPhan = maPhan,
-                            MaSoCauHoi = await GenerateMaSoCauHoiAsync(),
-                            NoiDung = question.NoiDung,
-                            HoanVi = question.Answers.Any(a => a.HoanVi),
-                            CapDo = 1,
-                            SoCauHoiCon = 0,
-                            DoPhanCach = 0,
-                            XoaTam = false,
-                            SoLanDuocThi = 0,
-                            SoLanDung = 0,
-                            CLO = question.CLO,
-                            CauTraLois = question.Answers.Select(a => new CreateCauTraLoiDto
+                            var cauHoiDto = new CreateCauHoiWithAnswersDto
                             {
-                                NoiDung = a.NoiDung,
-                                ThuTu = a.ThuTu,
-                                LaDapAn = a.LaDapAn,
-                                HoanVi = a.HoanVi,
-                                MaCauHoi = Guid.Empty
-                            }).ToList(),
-                            Files = question.Files.Select(f => new FileDto
+                                MaPhan = maPhan,
+                                MaSoCauHoi = await GenerateMaSoCauHoiAsync(),
+                                NoiDung = question.NoiDung,
+                                HoanVi = question.Answers.Any(a => a.HoanVi),
+                                CapDo = 1,
+                                SoCauHoiCon = 0,
+                                DoPhanCach = 0,
+                                XoaTam = false,
+                                SoLanDuocThi = 0,
+                                SoLanDung = 0,
+                                CLO = question.CLO,
+                                CauTraLois = question.Answers.Select(a => new CreateCauTraLoiDto
+                                {
+                                    NoiDung = a.NoiDung,
+                                    ThuTu = a.ThuTu,
+                                    LaDapAn = a.LaDapAn,
+                                    HoanVi = a.HoanVi,
+                                    MaCauHoi = Guid.Empty
+                                }).ToList(),
+                                Files = question.Files.Select(f => new FileDto
+                                {
+                                    TenFile = f.FileName,
+                                    LoaiFile = f.FileType,
+                                    MaCauHoi = Guid.Empty
+                                }).ToList()
+                            };
+
+                            _logger.LogInformation("Lưu câu hỏi: {NoiDung}",
+                                cauHoiDto.NoiDung != null ? cauHoiDto.NoiDung.Substring(0, Math.Min(100, cauHoiDto.NoiDung.Length)) : string.Empty);
+
+                            var addedCauHoi = await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
+
+                            foreach (var cauTraLoi in cauHoiDto.CauTraLois)
                             {
-                                TenFile = f.FileName,
-                                LoaiFile = f.FileType,
-                                MaCauHoi = Guid.Empty
-                            }).ToList()
-                        };
+                                cauTraLoi.MaCauHoi = addedCauHoi.MaCauHoi;
+                            }
+                            foreach (var file in cauHoiDto.Files)
+                            {
+                                file.MaCauHoi = addedCauHoi.MaCauHoi;
+                            }
 
-                        _logger.LogInformation("Saving question: {NoiDung}", cauHoiDto.NoiDung != null ? cauHoiDto.NoiDung.Substring(0, Math.Min(50, cauHoiDto.NoiDung.Length)) : string.Empty);
-
-                        var addedCauHoi = await _cauHoiRepository.AddWithAnswersAsync(cauHoiDto);
-
-                        foreach (var cauTraLoi in cauHoiDto.CauTraLois)
-                        {
-                            cauTraLoi.MaCauHoi = addedCauHoi.MaCauHoi;
-                        }
-                        foreach (var file in cauHoiDto.Files)
-                        {
-                            file.MaCauHoi = addedCauHoi.MaCauHoi;
-                        }
-
-                        await ProcessQuestionFiles(question, addedCauHoi, cauHoiDto, mediaFolderPath, result);
-                        lock (result) // Thread-safe increment
-                        {
+                            await ProcessQuestionFiles(question, addedCauHoi, cauHoiDto, mediaFolderPath, result);
                             result.SuccessCount++;
+
+                            _logger.LogInformation("Đã lưu thành công câu hỏi {MaCauHoi} với {AnswerCount} đáp án",
+                                addedCauHoi.MaCauHoi, question.Answers.Count);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Lỗi khi lưu câu hỏi: {NoiDung}",
+                                question.NoiDung != null ? question.NoiDung.Substring(0, Math.Min(50, question.NoiDung.Length)) : string.Empty);
+                            result.Errors.Add($"Error saving question: {ex.Message}");
                         }
                     }
-                });
+                }
 
                 await transaction.CommitAsync();
                 _logger.LogInformation("Successfully saved all batches. Total questions: {SuccessCount}", result.SuccessCount);
@@ -413,6 +497,7 @@ namespace BEQuestionBank.Core.Services
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error saving question batch: {Message}", ex.Message);
                 result.Errors.Add($"Error saving question batch: {ex.Message}");
+                throw;
             }
         }
 
@@ -427,7 +512,7 @@ namespace BEQuestionBank.Core.Services
                     if (file.ImageData != null)
                     {
                         await File.WriteAllBytesAsync(destinationPath, file.ImageData);
-                        _logger.LogInformation("Saved embedded image {FileName} for question {MaCauHoi}");
+                        _logger.LogInformation($"Saved embedded image {file.FileName} for question {addedCauHoi.MaCauHoi}");
                     }
                     else if (!string.IsNullOrEmpty(mediaFolderPath))
                     {
@@ -441,7 +526,7 @@ namespace BEQuestionBank.Core.Services
                             {
                                 fileDto.TenFile = $"<img src=\"{relativePath}\" alt=\"Question Image\" style=\"max-width: 100%; height: auto;\" />";
                             }
-                            _logger.LogInformation("Uploaded file {FileName} for question {MaCauHoi}");
+                            _logger.LogInformation($"Uploaded file {file.FileName} for question {addedCauHoi.MaCauHoi}");
                         }
                         else
                         {
@@ -457,7 +542,7 @@ namespace BEQuestionBank.Core.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error saving file {FileName} for question {MaCauHoi}");
+                    _logger.LogError(ex, $"Error saving file {file.FileName} for question {addedCauHoi.MaCauHoi}");
                     result.Errors.Add($"Error saving file {file.FileName}: {ex.Message}");
                 }
             }
