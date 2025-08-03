@@ -370,7 +370,8 @@ namespace BEQuestionBank.Core.Services
                                     BiKhoa = dto.BiKhoa,
                                     MaKhoa = maKhoa,
                                     NgayTao = DateTime.UtcNow,
-                                    NgayCapNhap = DateTime.UtcNow
+                                    NgayCapNhap = DateTime.UtcNow,
+                                    NgayDangNhapCuoi = null 
                                 };
 
                                 await _userRepository.AddAsync(entity);

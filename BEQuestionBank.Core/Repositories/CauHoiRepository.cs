@@ -34,7 +34,7 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 .Include(c => c.Files)
                 .Include(c => c.CauHoiCha)
                 .Include(c => c.CauHoiCons)
-                .Where(c => c.XoaTam == false) // Lọc câu hỏi chưa bị xóa tạm
+                .Where(c => c.XoaTam == false)
                 .AsNoTracking()
                 .Select(c => new CauHoiDto
                 {
@@ -293,12 +293,12 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 SoCauHoiCon = cauHoiDto.SoCauHoiCon,
                 DoPhanCach = cauHoiDto.DoPhanCach,
                 MaCauHoiCha = cauHoiDto.MaCauHoiCha,
-                XoaTam = cauHoiDto.XoaTam ?? false,
-                SoLanDuocThi = cauHoiDto.SoLanDuocThi ?? 0,
-                SoLanDung = cauHoiDto.SoLanDung ?? 0,
+                XoaTam = false,
+                SoLanDuocThi = null,
+                SoLanDung = null,
                 CLO = cauHoiDto.CLO,
                 NgayTao = DateTime.UtcNow,
-                NgaySua = DateTime.UtcNow
+                NgaySua = null
             };
 
             await _dbSet.AddAsync(cauHoi);

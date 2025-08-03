@@ -38,7 +38,9 @@ public class AppDbContext : DbContext
             .WithMany(c => c.CauHoiCons)
             .HasForeignKey(c => c.MaCauHoiCha)
             .OnDelete(DeleteBehavior.Restrict);
-
         
+        modelBuilder.Entity<ChiTietDeThi>()
+            .HasKey(ct => new { ct.MaDeThi, ct.MaCauHoi });
+
     }
 }

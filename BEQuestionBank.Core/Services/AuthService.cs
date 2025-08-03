@@ -74,7 +74,7 @@ namespace BEQuestionBank.Core.Services
             if (await _nguoiDungRepository.IsLockedAsync(username)) return false;
             var user = await _nguoiDungRepository.FirstOrDefaultAsync(u => u.TenDangNhap == username);
             if (user == null) return false;
-            return BCrypt.Net.BCrypt.Verify(password, user.MatKhau); // So sánh mật khẩu đã hash
+            return BCrypt.Net.BCrypt.Verify(password, user.MatKhau); 
         }
 
         public async Task<bool> RegisterAsync(RegisterDto registerDto)

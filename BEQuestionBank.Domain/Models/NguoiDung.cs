@@ -21,6 +21,9 @@ public class NguoiDung : ModelBase
     [ForeignKey("Khoa")]
     public Guid? MaKhoa { get; set; }
 
+    public DateTime? NgayDangNhapCuoi { get; set; }
+
     public virtual Khoa? Khoa { get; set; }
+    
     
 }

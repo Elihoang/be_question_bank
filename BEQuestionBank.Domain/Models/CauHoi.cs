@@ -30,6 +30,7 @@ public class CauHoi : ModelBase
     public Guid? NguoiTao { get; set; }
 
     public virtual Phan Phan { get; set; }
+    
     public virtual CauHoi? CauHoiCha { get; set; }
     public ICollection<CauHoi> CauHoiCons { get; set; } = new List<CauHoi>();
     public virtual NguoiDung? NguoiDung { get; set; }

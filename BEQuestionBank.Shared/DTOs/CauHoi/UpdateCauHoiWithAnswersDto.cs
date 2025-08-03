@@ -21,6 +21,5 @@ namespace BEQuestionBank.Shared.DTOs.CauHoi
         public EnumCLO? CLO { get; set; }
         public List<UpdateCauTraLoiIdDto> CauTraLois { get; set; } = new List<UpdateCauTraLoiIdDto>();
         
-        
     }
 }
