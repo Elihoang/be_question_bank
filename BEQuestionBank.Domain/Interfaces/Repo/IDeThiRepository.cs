@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs.DeThi;
+using Microsoft.AspNetCore.Http;
 
 namespace BEQuestionBank.Domain.Interfaces.Repo
 {
@@ -13,9 +14,7 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
         Task<DeThiDto> AddWithChiTietAsync(DeThiDto deThiDto);
         Task<DeThiDto> UpdateWithChiTietAsync(DeThiDto deThiDto);
         Task<IEnumerable<DeThi>> GetByMaMonHocAsync(Guid maMonHoc);
-        
         Task<IEnumerable<DeThiDto>> GetApprovedDeThisAsync();
-
 
     }
 }

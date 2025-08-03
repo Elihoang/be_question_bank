@@ -255,6 +255,18 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
             }
         }
+        [HttpPost("ImportExcel")]
+        public async Task<IActionResult> ImportMaTranFromExcelAsync(Guid maYeuCau, IFormFile excelFile)
+        {
+            var result = await _service.ImportMaTranFromExcelAsync(maYeuCau, excelFile);
+            return Ok(result);
+        }
 
+        [HttpPost("ManualSelect")]
+        public async Task<IActionResult> ManualSelectCauHoiAsync(Guid maYeuCau, [FromBody] List<Guid> maCauHoiList)
+        {
+            var result = await _service.ManualSelectCauHoiAsync(maYeuCau, maCauHoiList);
+            return Ok(result);
+        }
     }
 }

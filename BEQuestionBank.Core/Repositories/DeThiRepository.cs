@@ -79,27 +79,40 @@ namespace BEQuestionBank.Core.Repositories
             if (deThiDto == null)
                 throw new ArgumentNullException(nameof(deThiDto));
 
+            // Sử dụng MaDeThi từ deThiDto hoặc tạo mới nếu không có
+            var maDeThi = deThiDto.MaDeThi != Guid.Empty ? deThiDto.MaDeThi : Guid.NewGuid();
             var deThi = new DeThi
             {
-                MaDeThi = Guid.NewGuid(),
+                MaDeThi = maDeThi,
                 MaMonHoc = deThiDto.MaMonHoc,
                 TenDeThi = deThiDto.TenDeThi,
                 DaDuyet = deThiDto.DaDuyet ?? false,
                 SoCauHoi = deThiDto.SoCauHoi,
                 NgayTao = deThiDto.NgayTao,
                 NgayCapNhap = deThiDto.NgaySua,
-                ChiTietDeThis = deThiDto.ChiTietDeThis?.Select(ct => new ChiTietDeThi
-                {
-                    MaDeThi = ct.MaDeThi ?? Guid.NewGuid(),
-                    MaPhan = ct.MaPhan,
-                    MaCauHoi = ct.MaCauHoi,
-                    ThuTu = ct.ThuTu
-                }).ToList() ?? new List<ChiTietDeThi>()
+                ChiTietDeThis = new List<ChiTietDeThi>()
             };
 
-            await AddAsync(deThi);
+            // Thêm ChiTietDeThi với cùng MaDeThi
+            if (deThiDto.ChiTietDeThis != null)
+            {
+                foreach (var chiTietDto in deThiDto.ChiTietDeThis)
+                {
+                    deThi.ChiTietDeThis.Add(new ChiTietDeThi
+                    {
+                        MaDeThi = maDeThi, // Sử dụng maDeThi của DeThi
+                        MaPhan = chiTietDto.MaPhan,
+                        MaCauHoi = chiTietDto.MaCauHoi,
+                        ThuTu = chiTietDto.ThuTu
+                    });
+                }
+            }
+
+            // Thêm DeThi vào context
+            await _context.DeThis.AddAsync(deThi);
             await _context.SaveChangesAsync();
 
+            // Cập nhật deThiDto
             deThiDto.MaDeThi = deThi.MaDeThi;
             return deThiDto;
         }

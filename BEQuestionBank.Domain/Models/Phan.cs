@@ -24,4 +24,5 @@ public class Phan : ModelBase
     public bool LaCauHoiNhom { get; set; } = false;
 
     public virtual MonHoc? MonHoc { get; set; }
+    public ICollection<CauHoi> CauHois { get; set; } = new List<CauHoi>();
 }

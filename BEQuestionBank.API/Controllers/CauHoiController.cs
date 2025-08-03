@@ -142,11 +142,11 @@ namespace BEQuestionBank.API.Controllers
                     HoanVi = cauHoiDto.HoanVi,
                     CapDo = cauHoiDto.CapDo,
                     SoCauHoiCon = cauHoiDto.SoCauHoiCon,
-                    DoPhanCach = cauHoiDto.DoPhanCach,
+                    DoPhanCach= 0 ,
                     MaCauHoiCha = cauHoiDto.MaCauHoiCha,
-                    XoaTam = cauHoiDto.XoaTam ?? false,
-                    SoLanDuocThi = cauHoiDto.SoLanDuocThi,
-                    SoLanDung = cauHoiDto.SoLanDung,
+                    XoaTam =  false,
+                    SoLanDuocThi = null,
+                    SoLanDung = null,
                     CLO = cauHoiDto.CLO
                 };
 

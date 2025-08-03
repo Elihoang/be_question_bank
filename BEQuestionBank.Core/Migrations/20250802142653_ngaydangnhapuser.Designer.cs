@@ -3,6 +3,7 @@ using System;
 using BEQuestionBank.Core.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BEQuestionBank.Core.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250802142653_ngaydangnhapuser")]
+    partial class ngaydangnhapuser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -184,7 +187,7 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<int?>("ThuTu")
                         .HasColumnType("integer");
 
-                    b.HasKey("MaDeThi", "MaCauHoi");
+                    b.HasKey("MaDeThi");
 
                     b.HasIndex("MaCauHoi");
 
@@ -467,7 +470,7 @@ namespace BEQuestionBank.Core.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BEQuestionBank.Domain.Models.Phan", "Phan")
-                        .WithMany("CauHois")
+                        .WithMany()
                         .HasForeignKey("MaPhan")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -624,11 +627,6 @@ namespace BEQuestionBank.Core.Migrations
             modelBuilder.Entity("BEQuestionBank.Domain.Models.MonHoc", b =>
                 {
                     b.Navigation("Phans");
-                });
-
-            modelBuilder.Entity("BEQuestionBank.Domain.Models.Phan", b =>
-                {
-                    b.Navigation("CauHois");
                 });
 #pragma warning restore 612, 618
         }

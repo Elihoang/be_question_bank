@@ -18,18 +18,9 @@ public class CreateCauHoiDto
 
     [Required(ErrorMessage = "Cấp độ không được để trống.")]
     public short CapDo { get; set; }
-
     public int SoCauHoiCon { get; set; } = 0;
-
-    public float? DoPhanCach { get; set; }
-
+    
     public Guid? MaCauHoiCha { get; set; }
-
-    public bool? XoaTam { get; set; }
-
-    public int? SoLanDuocThi { get; set; }
-
-    public int? SoLanDung { get; set; }
-
+    
     public EnumCLO? CLO { get; set; }
 }

@@ -22,6 +22,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IService<CauTraLoi>, CauTraLoiService>();
         services.AddScoped<IService<File>, FileService>();
         services.AddScoped<IService<DeThi>, DeThiService>();
+        services.AddScoped<IService<YeuCauRutTrich>, YeuCauRutTrichService>();
+        
 
         // Khoa
         services.AddScoped<IKhoaRepository, KhoaRepository>();
@@ -56,8 +58,14 @@ public static class ServiceCollectionExtensions
         //De Thi
         services.AddScoped<IDeThiRepository, DeThiRepository>();
         services.AddScoped<IDeThiService, DeThiService>();
+        
+        // User
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
+        
+        //yeu cau rut trich
+        services.AddScoped<IYeuCauRutTrichRepository, YeuCauRutTrichRepository>();
+        services.AddScoped<IYeuCauRutTrichService, YeuCauRutTrichService>();
         return services;
     }
 }
