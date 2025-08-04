@@ -1,26 +1,25 @@
-﻿using BEQuestionBank.Domain.Interfaces.Repo;
-using BEQuestionBank.Domain.Interfaces.Service;
+﻿using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Shared.DTOs.user;
 using Microsoft.AspNetCore.Http;
 using OfficeOpenXml;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace BEQuestionBank.Core.Services
 {
-    public class UserService : IUserService
+    public class NguoiDungService : INguoiDungService
     {
-        private readonly IUserRepository _userRepository;
+        private readonly INguoiDungRepository _userRepository;
         private readonly IKhoaRepository _khoaRepository;
 
-        public UserService(IUserRepository userRepository, IKhoaRepository khoaRepository)
+        public NguoiDungService(INguoiDungRepository userRepository, IKhoaRepository khoaRepository)
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
             _userRepository = userRepository;
@@ -29,196 +28,95 @@ namespace BEQuestionBank.Core.Services
 
         public async Task<NguoiDung> GetByIdAsync(Guid maNguoiDung)
         {
-            try
-            {
-                return await _userRepository.GetByIdAsync(maNguoiDung);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi lấy thông tin người dùng theo ID: {MaNguoiDung}", maNguoiDung);
-                throw;
-            }
+            return await _userRepository.GetByIdAsync(maNguoiDung);
         }
 
         public async Task<NguoiDung> CreateAsync(NguoiDung user)
         {
-            try
+            if (user == null)
             {
-                if (user == null)
-                {
-                    throw new ArgumentNullException(nameof(user), "Dữ liệu người dùng không được để trống");
-                }
+                throw new ArgumentNullException(nameof(user), "Dữ liệu người dùng không được để trống");
+            }
 
-                user.MaNguoiDung = Guid.NewGuid();
-                user.MatKhau = BCrypt.Net.BCrypt.HashPassword(user.MatKhau);
-                await _userRepository.AddAsync(user);
-                return user;
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi tạo người dùng: {User}", user);
-                throw;
-            }
+            user.MaNguoiDung = Guid.NewGuid();
+            user.MatKhau = BCrypt.Net.BCrypt.HashPassword(user.MatKhau);
+            await _userRepository.AddAsync(user);
+            return user;
         }
 
         public async Task<NguoiDung> UpdateAsync(Guid maNguoiDung, NguoiDung user)
         {
-            try
+            if (user == null)
             {
-                if (user == null)
-                {
-                    throw new ArgumentNullException(nameof(user), "Dữ liệu người dùng không được để trống");
-                }
-
-                var existingUser = await _userRepository.GetByIdAsync(maNguoiDung);
-                if (existingUser == null)
-                {
-                    throw new Exception("Không tìm thấy người dùng");
-                }
-
-                existingUser.TenDangNhap = user.TenDangNhap;
-                if (!string.IsNullOrEmpty(user.MatKhau))
-                {
-                    existingUser.MatKhau = BCrypt.Net.BCrypt.HashPassword(user.MatKhau);
-                }
-                existingUser.HoTen = user.HoTen;
-                existingUser.Email = user.Email;
-                existingUser.VaiTro = user.VaiTro;
-                existingUser.BiKhoa = user.BiKhoa;
-                existingUser.MaKhoa = user.MaKhoa;
-
-                await _userRepository.UpdateAsync(existingUser);
-                return existingUser;
+                throw new ArgumentNullException(nameof(user), "Dữ liệu người dùng không được để trống");
             }
-            catch (Exception ex)
+
+            var existingUser = await _userRepository.GetByIdAsync(maNguoiDung);
+            existingUser.TenDangNhap = user.TenDangNhap;
+            if (!string.IsNullOrEmpty(user.MatKhau))
             {
-                Serilog.Log.Error(ex, "Lỗi khi cập nhật người dùng với ID: {MaNguoiDung}", maNguoiDung);
-                throw;
+                existingUser.MatKhau = BCrypt.Net.BCrypt.HashPassword(user.MatKhau);
             }
+            existingUser.HoTen = user.HoTen;
+            existingUser.Email = user.Email;
+            existingUser.VaiTro = user.VaiTro;
+            existingUser.BiKhoa = user.BiKhoa;
+            existingUser.MaKhoa = user.MaKhoa;
+
+            await _userRepository.UpdateAsync(existingUser);
+            return existingUser;
         }
 
         public async Task<bool> DeleteAsync(Guid maNguoiDung)
         {
-            try
+            var user = await _userRepository.GetByIdAsync(maNguoiDung);
+            if (user == null)
             {
-                var user = await _userRepository.GetByIdAsync(maNguoiDung);
-                if (user == null)
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                await _userRepository.DeleteAsync(user);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi xóa người dùng với ID: {MaNguoiDung}", maNguoiDung);
-                throw;
-            }
+            await _userRepository.DeleteAsync(user);
+            return true;
         }
 
         public async Task<NguoiDung> GetByUsernameAsync(string tenDangNhap)
         {
-            try
-            {
-                return await _userRepository.GetByUsernameAsync(tenDangNhap);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi lấy thông tin người dùng theo TenDangNhap: {TenDangNhap}", tenDangNhap);
-                throw;
-            }
+            return await _userRepository.GetByUsernameAsync(tenDangNhap);
         }
 
         public async Task<IEnumerable<NguoiDung>> GetAllAsync()
         {
-            try
-            {
-                return await _userRepository.GetAllAsync();
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi lấy tất cả thông tin người dùng");
-                throw;
-            }
+            return await _userRepository.GetAllAsync();
         }
 
-        public async Task<IEnumerable<NguoiDung>> FindAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<IEnumerable<NguoiDung>> FindAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
-            try
-            {
-                return await _userRepository.FindAsync(predicate);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi tìm kiếm người dùng với điều kiện");
-                throw;
-            }
+            return await _userRepository.FindAsync(predicate);
         }
 
-        public async Task<NguoiDung> FirstOrDefaultAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<NguoiDung> FirstOrDefaultAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
-            try
-            {
-                return await _userRepository.FirstOrDefaultAsync(predicate);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi tìm người dùng đầu tiên với điều kiện");
-                throw;
-            }
+            return await _userRepository.FirstOrDefaultAsync(predicate);
         }
 
         public async Task AddAsync(NguoiDung entity)
         {
-            try
-            {
-                await _userRepository.AddAsync(entity);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi thêm người dùng: {User}", entity);
-                throw;
-            }
+            await _userRepository.AddAsync(entity);
         }
 
         public async Task UpdateAsync(NguoiDung entity)
         {
-            try
-            {
-                await _userRepository.UpdateAsync(entity);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi cập nhật người dùng: {User}", entity);
-                throw;
-            }
+            await _userRepository.UpdateAsync(entity);
         }
 
         public async Task DeleteAsync(NguoiDung entity)
         {
-            try
-            {
-                await _userRepository.DeleteAsync(entity);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi xóa người dùng: {User}", entity);
-                throw;
-            }
+            await _userRepository.DeleteAsync(entity);
         }
 
-        public async Task<bool> ExistsAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<bool> ExistsAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
-            try
-            {
-                return await _userRepository.ExistsAsync(predicate);
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi kiểm tra sự tồn tại của người dùng với điều kiện");
-                throw;
-            }
+            return await _userRepository.ExistsAsync(predicate);
         }
 
         public async Task<IEnumerable<NguoiDung>> GetUsersActiveAsync()
@@ -249,7 +147,7 @@ namespace BEQuestionBank.Core.Services
             return true;
         }
 
-      public async Task<(int SuccessCount, List<string> Errors)> ImportUsersFromExcelAsync(IFormFile file)
+        public async Task<(int SuccessCount, List<string> Errors)> ImportUsersFromExcelAsync(IFormFile file)
         {
             var errors = new List<string>();
             int successCount = 0;
@@ -331,7 +229,7 @@ namespace BEQuestionBank.Core.Services
                                 // Check for duplicates using repository
                                 var isDuplicate = await _userRepository.ExistsAsync(u =>
                                     u.TenDangNhap == dto.TenDangNhap || u.Email == dto.Email);
-                                
+
                                 if (isDuplicate)
                                 {
                                     errors.Add($"Dòng {row}: Tên đăng nhập hoặc Email đã tồn tại.");
@@ -371,7 +269,7 @@ namespace BEQuestionBank.Core.Services
                                     MaKhoa = maKhoa,
                                     NgayTao = DateTime.UtcNow,
                                     NgayCapNhap = DateTime.UtcNow,
-                                    NgayDangNhapCuoi = null 
+                                    NgayDangNhapCuoi = null
                                 };
 
                                 await _userRepository.AddAsync(entity);

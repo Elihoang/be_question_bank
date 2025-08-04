@@ -10,23 +10,32 @@ namespace BEQuestionBank.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UserController : ControllerBase
+    public class NguoiDungController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly INguoiDungService _userService;
 
-        public UserController(IUserService userService)
+        public NguoiDungController(INguoiDungService userService)
         {
             _userService = userService;
         }
 
         [HttpGet("{id}")]
-        [SwaggerOperation(Summary = "Lấy thông] tin người dùng theo ID")]
+        [SwaggerOperation(Summary = "Lấy thông tin người dùng theo ID")]
         public async Task<IActionResult> GetUserById(Guid id)
         {
             try
             {
                 var user = await _userService.GetByIdAsync(id);
-                return Ok(user);
+                var userDto = new NguoiDungDto
+                {
+                    MaNguoiDung = user.MaNguoiDung,
+                    TenDangNhap = user.TenDangNhap,
+                    HoTen = user.HoTen,
+                    Email = user.Email,
+                    VaiTro = user.VaiTro,
+                    BiKhoa = user.BiKhoa
+                };
+                return Ok(userDto);
             }
             catch (Exception ex)
             {
@@ -49,16 +58,16 @@ namespace BEQuestionBank.API.Controllers
                 }
 
                 var user = await _userService.GetByUsernameAsync(username);
-                return Ok(new
+                var userDto = new NguoiDungDto
                 {
                     MaNguoiDung = user.MaNguoiDung,
                     TenDangNhap = user.TenDangNhap,
                     HoTen = user.HoTen,
                     Email = user.Email,
-       
                     VaiTro = user.VaiTro,
-             
-                });
+                    BiKhoa = user.BiKhoa
+                };
+                return Ok(userDto);
             }
             catch (Exception ex)
             {
@@ -69,38 +78,75 @@ namespace BEQuestionBank.API.Controllers
 
         [HttpPost]
         [SwaggerOperation(Summary = "Tạo người dùng mới")]
-        public async Task<IActionResult> CreateUser([FromBody] NguoiDung user)
+        public async Task<IActionResult> CreateUser([FromBody] NguoiDungDto userDto)
         {
             try
             {
-                if (user == null)
+                if (userDto == null)
                 {
                     return BadRequest(new { message = "Dữ liệu người dùng không được để trống" });
                 }
 
+                var user = new NguoiDung
+                {
+                    TenDangNhap = userDto.TenDangNhap,
+                    MatKhau = userDto.TenDangNhap, // Mật khẩu mặc định bằng tên đăng nhập, cần cải thiện
+                    HoTen = userDto.HoTen,
+                    Email = userDto.Email,
+                    VaiTro = userDto.VaiTro,
+                    BiKhoa = userDto.BiKhoa
+                };
+
                 var createdUser = await _userService.CreateAsync(user);
-                return CreatedAtAction(nameof(GetUserById), new { id = createdUser.MaNguoiDung }, createdUser);
+                var createdUserDto = new NguoiDungDto
+                {
+                    MaNguoiDung = createdUser.MaNguoiDung,
+                    TenDangNhap = createdUser.TenDangNhap,
+                    HoTen = createdUser.HoTen,
+                    Email = createdUser.Email,
+                    VaiTro = createdUser.VaiTro,
+                    BiKhoa = createdUser.BiKhoa
+                };
+                return CreatedAtAction(nameof(GetUserById), new { id = createdUser.MaNguoiDung }, createdUserDto);
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "Lỗi khi tạo người dùng: {User}", user);
+                Serilog.Log.Error(ex, "Lỗi khi tạo người dùng: {User}", userDto);
                 return StatusCode(500, new { message = "Lỗi khi tạo người dùng", chi_tiet = ex.Message });
             }
         }
 
         [HttpPatch("{id}")]
         [SwaggerOperation(Summary = "Cập nhật thông tin người dùng")]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] NguoiDung user)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] NguoiDungDto userDto)
         {
             try
             {
-                if (user == null)
+                if (userDto == null)
                 {
                     return BadRequest(new { message = "Dữ liệu người dùng không được để trống" });
                 }
 
+                var user = new NguoiDung
+                {
+                    TenDangNhap = userDto.TenDangNhap,
+                    HoTen = userDto.HoTen,
+                    Email = userDto.Email,
+                    VaiTro = userDto.VaiTro,
+                    BiKhoa = userDto.BiKhoa
+                };
+
                 var updatedUser = await _userService.UpdateAsync(id, user);
-                return Ok(updatedUser);
+                var updatedUserDto = new NguoiDungDto
+                {
+                    MaNguoiDung = updatedUser.MaNguoiDung,
+                    TenDangNhap = updatedUser.TenDangNhap,
+                    HoTen = updatedUser.HoTen,
+                    Email = updatedUser.Email,
+                    VaiTro = updatedUser.VaiTro,
+                    BiKhoa = updatedUser.BiKhoa
+                };
+                return Ok(updatedUserDto);
             }
             catch (Exception ex)
             {
@@ -128,7 +174,7 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(500, new { message = "Lỗi khi xóa người dùng", chi_tiet = ex.Message });
             }
         }
-        // GET: api/User/Active
+
         [HttpGet("Active")]
         [SwaggerOperation(Summary = "Lấy danh sách người dùng đang hoạt động (không bị khóa)")]
         public async Task<IActionResult> GetUsersActive()
@@ -138,7 +184,16 @@ namespace BEQuestionBank.API.Controllers
                 var users = await _userService.GetUsersActiveAsync();
                 if (users == null || !users.Any())
                     return NotFound("Không tìm thấy người dùng đang hoạt động.");
-                return Ok(users);
+                var userDtos = users.Select(u => new NguoiDungDto
+                {
+                    MaNguoiDung = u.MaNguoiDung,
+                    TenDangNhap = u.TenDangNhap,
+                    HoTen = u.HoTen,
+                    Email = u.Email,
+                    VaiTro = u.VaiTro,
+                    BiKhoa = u.BiKhoa
+                });
+                return Ok(userDtos);
             }
             catch (Exception ex)
             {
@@ -147,7 +202,6 @@ namespace BEQuestionBank.API.Controllers
             }
         }
 
-        // GET: api/User/Locked
         [HttpGet("Locked")]
         [SwaggerOperation(Summary = "Lấy danh sách người dùng bị khóa")]
         public async Task<IActionResult> GetUsersLocked()
@@ -157,7 +211,16 @@ namespace BEQuestionBank.API.Controllers
                 var users = await _userService.GetUsersLockedAsync();
                 if (users == null || !users.Any())
                     return NotFound("Không tìm thấy người dùng bị khóa.");
-                return Ok(users);
+                var userDtos = users.Select(u => new NguoiDungDto
+                {
+                    MaNguoiDung = u.MaNguoiDung,
+                    TenDangNhap = u.TenDangNhap,
+                    HoTen = u.HoTen,
+                    Email = u.Email,
+                    VaiTro = u.VaiTro,
+                    BiKhoa = u.BiKhoa
+                });
+                return Ok(userDtos);
             }
             catch (Exception ex)
             {
@@ -166,7 +229,6 @@ namespace BEQuestionBank.API.Controllers
             }
         }
 
-        // POST: api/User/Lock/{id}
         [HttpPost("Lock/{id}")]
         [SwaggerOperation(Summary = "Khóa người dùng theo ID")]
         public async Task<IActionResult> LockUser(Guid id)
@@ -185,7 +247,6 @@ namespace BEQuestionBank.API.Controllers
             }
         }
 
-        // POST: api/User/Unlock/{id}
         [HttpPost("Unlock/{id}")]
         [SwaggerOperation(Summary = "Mở khóa người dùng theo ID")]
         public async Task<IActionResult> UnlockUser(Guid id)
@@ -203,6 +264,7 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(500, "Lỗi hệ thống.");
             }
         }
+
         [HttpPost("Import")]
         [SwaggerOperation(Summary = "Nhập danh sách người dùng từ file Excel")]
         [Consumes("multipart/form-data")]
@@ -229,7 +291,7 @@ namespace BEQuestionBank.API.Controllers
                         SuccessCount = successCount,
                         ErrorCount = errors.Count,
                         Errors = errors,
-                        Message = successCount > 0 
+                        Message = successCount > 0
                             ? $"Nhập thành công {successCount} người dùng, nhưng có {errors.Count} lỗi."
                             : "Không nhập được người dùng nào do có lỗi."
                     });

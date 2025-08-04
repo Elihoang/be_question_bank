@@ -60,8 +60,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDeThiService, DeThiService>();
         
         // User
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IUserService, UserService>();
+   
+        services.AddScoped<INguoiDungService, NguoiDungService>();
         
         //yeu cau rut trich
         services.AddScoped<IYeuCauRutTrichRepository, YeuCauRutTrichRepository>();
