@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace BEQuestionBank.Domain.Interfaces.Service
 {
-    public interface IUserService : IService<NguoiDung>
+    public interface INguoiDungService : IService<NguoiDung>
     {
         Task<NguoiDung> GetByIdAsync(Guid maNguoiDung); 
         Task<NguoiDung> CreateAsync(NguoiDung user);   
