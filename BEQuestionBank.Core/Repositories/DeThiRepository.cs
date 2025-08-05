@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using BEQuestionBank.Shared.DTOs.CauTraLoi;
 
 namespace BEQuestionBank.Core.Repositories
 {
@@ -38,7 +39,7 @@ namespace BEQuestionBank.Core.Repositories
                 DaDuyet = deThi.DaDuyet,
                 SoCauHoi = deThi.SoCauHoi,
                 NgayTao = deThi.NgayTao,
-                NgaySua = deThi.NgayCapNhap,
+                NgayCapNhap = deThi.NgayCapNhap,
                 ChiTietDeThis = deThi.ChiTietDeThis?.Select(ct => new ChiTietDeThiDto
                 {
                     MaDeThi = ct.MaDeThi,
@@ -53,6 +54,8 @@ namespace BEQuestionBank.Core.Repositories
         {
             var deThis = await _context.DeThis
                 .Include(dt => dt.ChiTietDeThis)
+                .Include(dt => dt.MonHoc)
+                .ThenInclude(mh => mh.Khoa)
                 .ToListAsync();
 
             return deThis.Select(deThi => new DeThiDto
@@ -62,8 +65,10 @@ namespace BEQuestionBank.Core.Repositories
                 TenDeThi = deThi.TenDeThi,
                 DaDuyet = deThi.DaDuyet,
                 SoCauHoi = deThi.SoCauHoi,
+                TenMonHoc = deThi.MonHoc?.TenMonHoc,
+                TenKhoa = deThi.MonHoc?.Khoa?.TenKhoa,
                 NgayTao = deThi.NgayTao,
-                NgaySua = deThi.NgayCapNhap,
+                NgayCapNhap = deThi.NgayCapNhap,
                 ChiTietDeThis = deThi.ChiTietDeThis?.Select(ct => new ChiTietDeThiDto
                 {
                     MaDeThi = ct.MaDeThi,
@@ -89,7 +94,7 @@ namespace BEQuestionBank.Core.Repositories
                 DaDuyet = deThiDto.DaDuyet ?? false,
                 SoCauHoi = deThiDto.SoCauHoi,
                 NgayTao = deThiDto.NgayTao,
-                NgayCapNhap = deThiDto.NgaySua,
+                NgayCapNhap = deThiDto.NgayCapNhap,
                 ChiTietDeThis = new List<ChiTietDeThi>()
             };
 
@@ -159,7 +164,7 @@ namespace BEQuestionBank.Core.Repositories
                 DaDuyet = deThi.DaDuyet,
                 SoCauHoi = deThi.SoCauHoi,
                 NgayTao = deThi.NgayTao,
-                NgaySua = DateTime.UtcNow,
+                NgayCapNhap = DateTime.UtcNow,
                 ChiTietDeThis = deThi.ChiTietDeThis?.Select(ct => new ChiTietDeThiDto
                 {
                     MaDeThi = ct.MaDeThi,
@@ -193,7 +198,7 @@ namespace BEQuestionBank.Core.Repositories
                 DaDuyet = deThi.DaDuyet,
                 SoCauHoi = deThi.SoCauHoi,
                 NgayTao = deThi.NgayTao,
-                NgaySua = deThi.NgayCapNhap,
+                NgayCapNhap = deThi.NgayCapNhap,
                 ChiTietDeThis = deThi.ChiTietDeThis?.Select(ct => new ChiTietDeThiDto
                 {
                     MaDeThi = ct.MaDeThi,
@@ -204,5 +209,54 @@ namespace BEQuestionBank.Core.Repositories
             }).ToList();
         }
 
+        public async Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi)
+        {
+            var deThi = await _context.DeThis
+                .Include(d => d.ChiTietDeThis)
+                .ThenInclude(ct => ct.CauHoi)
+                .Include(d => d.ChiTietDeThis)
+                .ThenInclude(ct => ct.CauHoi.CauTraLois)
+                .FirstOrDefaultAsync(d => d.MaDeThi == maDeThi);
+
+            if (deThi == null)
+            {
+                return null;
+            }
+
+            var result = new DeThiWithChiTietAndCauTraLoiDto
+            {
+                MaDeThi = deThi.MaDeThi,
+                MaMonHoc = deThi.MaMonHoc,
+                TenDeThi = deThi.TenDeThi,
+                DaDuyet = deThi.DaDuyet,
+                SoCauHoi = deThi.SoCauHoi ?? 0,
+                NgayTao = deThi.NgayTao,
+                NgayCapNhap = deThi.NgayCapNhap,
+                ChiTietDeThis = deThi.ChiTietDeThis.Select(ct => new ChiTietDeThiDto
+                {
+                    MaDeThi = ct.MaDeThi,
+                    MaCauHoi = ct.MaCauHoi,
+                    MaPhan = ct.MaPhan,
+                    ThuTu = ct.ThuTu
+                }).ToList(),
+                CauTraLoiByCauHoi = deThi.ChiTietDeThis
+                    .SelectMany(ct => ct.CauHoi.CauTraLois)
+                    .GroupBy(ct => ct.MaCauHoi)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(cl => new CauTraLoiDto
+                        {
+                            MaCauTraLoi = cl.MaCauTraLoi,
+                            MaCauHoi = cl.MaCauHoi,
+                            NoiDung = cl.NoiDung,
+                            ThuTu = cl.ThuTu,
+                            LaDapAn = cl.LaDapAn,
+                            HoanVi = cl.HoanVi
+                        }).ToList()
+                    )
+            };
+
+            return result;
+        }
     }
 }

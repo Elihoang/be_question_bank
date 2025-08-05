@@ -7,9 +7,14 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using BEQuestionBank.Domain.Enums;
+using BEQuestionBank.Shared.DTOs.CauTraLoi;
 using BEQuestionBank.Shared.DTOs.ChiTietDeThi;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Http;
 using OfficeOpenXml;
+using FontSize = DocumentFormat.OpenXml.Spreadsheet.FontSize;
 
 namespace BEQuestionBank.Core.Services
 {
@@ -18,12 +23,14 @@ namespace BEQuestionBank.Core.Services
         private readonly IDeThiRepository _deThiRepository;
         private readonly IYeuCauRutTrichRepository _yeuCauRutTrichRepository;
         private readonly ICauHoiRepository _cauHoiRepository;
+        private readonly ICauTraLoiRepository _cauTraLoiRepository;
 
-        public DeThiService(IDeThiRepository deThiRepository, IYeuCauRutTrichRepository yeuCauRutTrichRepository, ICauHoiRepository cauHoiRepository)
+        public DeThiService(IDeThiRepository deThiRepository, IYeuCauRutTrichRepository yeuCauRutTrichRepository, ICauHoiRepository cauHoiRepository, ICauTraLoiRepository cauTraLoiRepository)
         {
             _deThiRepository = deThiRepository;
             _yeuCauRutTrichRepository = yeuCauRutTrichRepository;
             _cauHoiRepository = cauHoiRepository;
+            _cauTraLoiRepository = cauTraLoiRepository;
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
         
@@ -203,7 +210,7 @@ namespace BEQuestionBank.Core.Services
         DaDuyet = false,
         SoCauHoi = totalCauHoi,
         NgayTao = DateTime.UtcNow,
-        NgaySua = DateTime.UtcNow,
+        NgayCapNhap = DateTime.UtcNow,
         ChiTietDeThis = chiTietDeThis
     };
 
@@ -253,7 +260,7 @@ namespace BEQuestionBank.Core.Services
                 DaDuyet = false,
                 SoCauHoi = maCauHoiList.Count,
                 NgayTao = DateTime.UtcNow,
-                NgaySua = DateTime.UtcNow,
+                NgayCapNhap = DateTime.UtcNow,
                 ChiTietDeThis = chiTietDeThis
             };
 
@@ -266,5 +273,290 @@ namespace BEQuestionBank.Core.Services
             return deThiDto;
         }
 
+        public async Task<DeThiDto> ChangerStatusAsync(Guid id, bool DaDuyet)
+        {
+            var deThi = await _deThiRepository.GetByIdAsync(id);
+            if (deThi == null)
+                throw new Exception($"Không tìm thấy đề thi với mã {id}.");
+
+            deThi.DaDuyet = DaDuyet;
+            deThi.NgayCapNhap = DateTime.UtcNow;
+
+            await _deThiRepository.UpdateAsync(deThi);
+
+            return new DeThiDto
+            {
+                MaDeThi = deThi.MaDeThi,
+                MaMonHoc = deThi.MaMonHoc,
+                TenDeThi = deThi.TenDeThi,
+                DaDuyet = deThi.DaDuyet,
+                SoCauHoi = deThi.SoCauHoi,
+                NgayTao = deThi.NgayTao,
+                NgayCapNhap = deThi.NgayCapNhap
+            };
+            
+        }
+        public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi)
+        {
+            // Lấy thông tin đề thi với chi tiết và câu trả lời
+            var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
+            if (deThiDto == null)
+            {
+                return null;
+            }
+        
+            // Đường dẫn đến template .dotx
+            string templatePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "DefaultExamTemplate.dotx");
+            if (!System.IO.File.Exists(templatePath))
+            {
+                throw new FileNotFoundException("Tệp template không tồn tại.", templatePath);
+            }
+        
+            // Tạo tệp Word mới dựa trên template
+            string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
+            System.IO.File.Copy(templatePath, filePath, true);
+        
+            using (WordprocessingDocument doc = WordprocessingDocument.Open(filePath, true))
+            {
+                var body = doc.MainDocumentPart.Document.Body;
+        
+                // Thêm tiêu đề và thông tin đề thi
+                var paragraph = new Paragraph(new Run(new Text($"Đề thi: {deThiDto.TenDeThi}")));
+        
+                body.Append(new Paragraph(new Run(new Text("")))); 
+        
+                // Thêm danh sách câu hỏi và đáp án
+                int cauHoiIndex = 1;
+                foreach (var chiTiet in deThiDto.ChiTietDeThis)
+                {
+                    var cauHoi = (await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi)) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
+        
+                    // Câu hỏi dòng 1
+                    paragraph = new Paragraph();
+                    var run = new Run();
+                    run.Append(new Text($"Câu {cauHoiIndex} ({cauHoi.CLO}): {cauHoi.NoiDung}"));
+                    paragraph.Append(run);
+                    body.Append(paragraph);
+        
+                    // Đáp án a), b), c), d)
+                    if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
+                    {
+                        char dapAnLabel = 'A';
+                        foreach (var cauTraLoi in cauTraLoiList)
+                        {
+                            paragraph = new Paragraph();
+                            run = new Run();
+                            run.Append(new Text($"{dapAnLabel}. {cauTraLoi.NoiDung}"));
+                            paragraph.Append(run);
+                            body.Append(paragraph);
+        
+                            dapAnLabel++;
+                        }
+                    }
+        
+                    body.Append(new Paragraph(new Run(new Text("")))); 
+                    cauHoiIndex++;
+                }
+        
+                doc.MainDocumentPart.Document.Save();
+            }
+        
+            // Chuyển file thành MemoryStream để trả về
+            var memoryStream = new MemoryStream();
+            using (var stream = new FileStream(filePath, FileMode.Open))
+            {
+                await stream.CopyToAsync(memoryStream);
+            }
+            memoryStream.Position = 0;
+            System.IO.File.Delete(filePath); // Xóa file tạm sau khi sử dụng
+        
+            return memoryStream;
+        }
+       public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters)
+            {
+                // Retrieve exam information with details and answers
+                var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
+                if (deThiDto == null)
+                {
+                    return null;
+                }
+
+                // Fallback values if parameters are not provided
+                string monThi = parameters.MonThi ?? deThiDto.TenDeThi ?? "N/A";
+               
+                string soTinChi = parameters.SoTinChi ?? "3";
+                string hocKy = parameters.HocKy ?? "N/A";
+                string lop = parameters.Lop ?? "N/A";
+                string ngayThi = parameters.NgayThi ?? DateTime.Now.ToString("dd/MM/yyyy");
+                string thoiGianLam = parameters.ThoiGianLam ?? "N/A";
+                string hinhThuc = parameters.HinhThuc ?? "N/A";
+                string maDe = parameters.MaDe ?? "N/A";
+                string taiLieu = parameters.TaiLieuCo == true ? "CÓ" : "KHÔNG";
+
+                // Create a temporary Word document
+                string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
+                var memoryStream = new MemoryStream();
+                using (var doc = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document, true))
+                {
+                    // Initialize main document part
+                    MainDocumentPart mainPart = doc.AddMainDocumentPart();
+                    mainPart.Document = new Document();
+                    Body body = new Body();
+                    mainPart.Document.Append(body);
+
+                    // Add header section
+                    Paragraph header = new Paragraph(new Run(new Text("BM:03/QT02-P.KT")));
+                    header.ParagraphProperties = new ParagraphProperties(
+                        new Justification { Val = JustificationValues.Center },
+                        new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+                    );
+                    body.Append(header);
+
+                    // Add exam title and details
+                    body.Append(new Paragraph(
+                        new Run(new Text($"ĐỀ THI HỌC KỲ {hocKy} NĂM HỌC"))
+                        {
+                            RunProperties = new RunProperties(new Bold(), new FontSize { Val = 28 })
+                        }
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Lớp: {lop}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Môn thi: {monThi}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"SoTC: {soTinChi}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Ngày thi: {ngayThi}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Thời gian làm bài: {thoiGianLam}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Hình thức thi: {hinhThuc}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    body.Append(new Paragraph(
+                        new Run(new Text($"Mã đề: {maDe}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+
+                    // Add "SỬ DỤNG TÀI LIỆU" section
+                    body.Append(new Paragraph(
+                        new Run(new Text($"SỬ DỤNG TÀI LIỆU: {taiLieu}"))
+                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
+                  
+                    foreach (var chiTiet in deThiDto.ChiTietDeThis)
+                    {
+                        var cauHoi = await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
+                        Paragraph questionPara = new Paragraph(
+                            new Run(new Text($"  - STT: {chiTiet.ThuTu}, Nội dung: {cauHoi.NoiDung}, MaSoCauHoi: {cauHoi.MaSoCauHoi}, CLO: {cauHoi.CLO}"))
+                        );
+                        body.Append(questionPara);
+
+                        if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
+                        {
+                            foreach (var cauTraLoi in cauTraLoiList)
+                            {
+                                body.Append(new Paragraph(
+                                    new Run(new Text($"     - Đáp án {cauTraLoi.ThuTu}: {cauTraLoi.NoiDung} {(cauTraLoi.LaDapAn ? "(Đáp án đúng)" : "")}"))
+                                ));
+                            }
+                        }
+                    }
+
+                    // Save document
+                    mainPart.Document.Save();
+                }
+
+                memoryStream.Position = 0;
+                return memoryStream;
+            }
+                  
+        public async Task<IEnumerable<CauTraLoiDto>> GetCauTraLoiByDeThiAsync(Guid maDeThi)
+        {
+            // Lấy thông tin đề thi với chi tiết
+            var deThiDto = await _deThiRepository.GetByIdWithChiTietAsync(maDeThi);
+            if (deThiDto == null || deThiDto.ChiTietDeThis == null)
+            {
+                return Enumerable.Empty<CauTraLoiDto>(); 
+            }
+
+            // Lấy danh sách MaCauHoi từ ChiTietDeThi
+            var maCauHoiList = deThiDto.ChiTietDeThis.Select(ct => ct.MaCauHoi).Distinct().ToList();
+
+            // Lấy tất cả câu trả lời liên quan đến các MaCauHoi
+            var cauTraLoiList = await _cauTraLoiRepository.FindAsync(ct => maCauHoiList.Contains(ct.MaCauHoi));
+
+            // Chuyển đổi sang DTO
+            var cauTraLoiDtos = cauTraLoiList.Select(ct => new CauTraLoiDto
+            {
+                MaCauTraLoi = ct.MaCauTraLoi,
+                MaCauHoi = ct.MaCauHoi,
+                NoiDung = ct.NoiDung,
+                ThuTu = ct.ThuTu,
+                LaDapAn = ct.LaDapAn,
+                HoanVi = ct.HoanVi
+            }).ToList();
+
+            return cauTraLoiDtos;
+        }
+        
+        public async Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi)
+        {
+            // Lấy thông tin đề thi với chi tiết
+            var deThiDto = await _deThiRepository.GetByIdWithChiTietAsync(maDeThi);
+            if (deThiDto == null || deThiDto.ChiTietDeThis == null)
+            {
+                return null; // Trả về null nếu không tìm thấy đề thi
+            }
+
+            // Tạo DTO tổng hợp
+            var result = new DeThiWithChiTietAndCauTraLoiDto
+            {
+                MaDeThi = deThiDto.MaDeThi,
+                MaMonHoc = deThiDto.MaMonHoc,
+                TenDeThi = deThiDto.TenDeThi,
+                DaDuyet = deThiDto.DaDuyet ?? false,
+                SoCauHoi = deThiDto.SoCauHoi ?? 0,
+                NgayTao = deThiDto.NgayTao,
+                NgayCapNhap = deThiDto.NgayCapNhap,
+                ChiTietDeThis = deThiDto.ChiTietDeThis.ToList(),
+                CauTraLoiByCauHoi = new Dictionary<Guid, List<CauTraLoiDto>>()
+            };
+
+            // Lấy danh sách MaCauHoi từ ChiTietDeThi
+            var maCauHoiList = deThiDto.ChiTietDeThis.Select(ct => ct.MaCauHoi).Distinct().ToList();
+
+            // Lấy tất cả câu trả lời liên quan đến các MaCauHoi
+            var cauTraLoiList = await _cauTraLoiRepository.FindAsync(ct => maCauHoiList.Contains(ct.MaCauHoi));
+
+            // Nhóm câu trả lời theo MaCauHoi
+            var cauTraLoiByCauHoi = cauTraLoiList
+                .GroupBy(ct => ct.MaCauHoi)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(ct => new CauTraLoiDto
+                    {
+                        MaCauTraLoi = ct.MaCauTraLoi,
+                        MaCauHoi = ct.MaCauHoi,
+                        NoiDung = ct.NoiDung,
+                        ThuTu = ct.ThuTu,
+                        LaDapAn = ct.LaDapAn,
+                        HoanVi = ct.HoanVi
+                    }).ToList()
+                );
+
+            result.CauTraLoiByCauHoi = cauTraLoiByCauHoi;
+
+            return result;
+        }
     }
 }

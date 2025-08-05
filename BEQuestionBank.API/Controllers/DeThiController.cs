@@ -104,7 +104,7 @@ namespace BEQuestionBank.API.Controllers
                     DaDuyet = createDto.DaDuyet,
                     SoCauHoi = createDto.SoCauHoi,
                     NgayTao = DateTime.UtcNow,
-                    NgaySua = DateTime.UtcNow,
+                    NgayCapNhap = DateTime.UtcNow,
                     ChiTietDeThis = createDto.ChiTietDeThis
                 };
 
@@ -159,7 +159,7 @@ namespace BEQuestionBank.API.Controllers
                 existing.TenDeThi = updateDto.TenDeThi;
                 existing.DaDuyet = updateDto.DaDuyet;
                 existing.SoCauHoi = updateDto.SoCauHoi;
-                existing.NgaySua = DateTime.UtcNow;
+                existing.NgayCapNhap = DateTime.UtcNow;
                 existing.ChiTietDeThis = updateDto.ChiTietDeThis;
 
                 var result = await _service.UpdateWithChiTietAsync(existing);
@@ -256,6 +256,7 @@ namespace BEQuestionBank.API.Controllers
             }
         }
         [HttpPost("ImportExcel")]
+        [SwaggerOperation("Nhập ma trận từ file Excel")]
         public async Task<IActionResult> ImportMaTranFromExcelAsync(Guid maYeuCau, IFormFile excelFile)
         {
             var result = await _service.ImportMaTranFromExcelAsync(maYeuCau, excelFile);
@@ -263,10 +264,125 @@ namespace BEQuestionBank.API.Controllers
         }
 
         [HttpPost("ManualSelect")]
+        [SwaggerOperation("Chọn câu hỏi thủ công cho yêu cầu rút trích")]
         public async Task<IActionResult> ManualSelectCauHoiAsync(Guid maYeuCau, [FromBody] List<Guid> maCauHoiList)
         {
             var result = await _service.ManualSelectCauHoiAsync(maYeuCau, maCauHoiList);
             return Ok(result);
+        }
+        [HttpPatch("{id}/ChangeStatus")]
+        [SwaggerOperation("Thay đổi trạng thái duyệt của đề thi")]
+        public async Task<IActionResult> ChangeStatusAsync(string id, [FromBody] bool daDuyet)
+        {
+            try
+            {
+                if (!Guid.TryParse(id, out var guidId))
+                {
+                    _logger.LogWarning("ID đề thi không hợp lệ: {Id}", id);
+                    return BadRequest("ID đề thi không hợp lệ.");
+                }
+
+                var updatedDeThi = await _service.ChangerStatusAsync(guidId, daDuyet);
+                if (updatedDeThi == null)
+                {
+                    _logger.LogWarning("Không tìm thấy đề thi với ID: {Id}", id);
+                    return NotFound($"Không tìm thấy đề thi với ID: {id}");
+                }
+
+                _logger.LogInformation("Thay đổi trạng thái duyệt của đề thi thành công với ID: {Id}", id);
+                return Ok(new { Message = "Thay đổi trạng thái duyệt thành công", Data = updatedDeThi });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thay đổi trạng thái duyệt của đề thi với ID: {Id}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi thay đổi trạng thái duyệt.");
+            }
+        }
+        [HttpGet("ExportWordTemplate/{maDeThi}")]
+        [SwaggerOperation(Summary = "Xuất đề thi thành tệp Word với template")]
+        public async Task<IActionResult> ExportWordTemplateAsync(string maDeThi)
+        {
+            try
+            {
+                if (!Guid.TryParse(maDeThi, out var guidId))
+                {
+                    _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
+                    return BadRequest("ID đề thi không hợp lệ.");
+                }
+        
+                // Gọi service để tạo và trả về tệp Word
+                var fileStream = await _service.ExportWordTemplateAsync(guidId);
+                if (fileStream == null)
+                {
+                    _logger.LogWarning("Không thể tạo tệp Word cho đề thi với ID: {maDeThi}", maDeThi);
+                    return NotFound($"Không thể tạo tệp Word cho đề thi với ID: {maDeThi}");
+                }
+        
+                _logger.LogInformation("Xuất đề thi thành công với ID: {maDeThi}", maDeThi);
+                return File(fileStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"DeThi_{maDeThi}.docx");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xuất đề thi thành tệp Word với ID: {maDeThi}", maDeThi);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
+            }
+        }
+        [HttpGet("{maDeThi}/CauTraLoi")]
+        [SwaggerOperation("Lấy danh sách câu trả lời của câu hỏi trong đề thi")]
+        public async Task<IActionResult> GetCauTraLoiByDeThiAsync(string maDeThi)
+        {
+            try
+            {
+                if (!Guid.TryParse(maDeThi, out var guidId))
+                {
+                    _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
+                    return BadRequest("ID đề thi không hợp lệ.");
+                }
+
+                var cauTraLoiList = await _service.GetCauTraLoiByDeThiAsync(guidId);
+                if (cauTraLoiList == null || !cauTraLoiList.Any())
+                {
+                    _logger.LogWarning("Không tìm thấy câu trả lời nào cho đề thi với ID: {maDeThi}", maDeThi);
+                    return NotFound($"Không tìm thấy câu trả lời nào cho đề thi với ID: {maDeThi}");
+                }
+
+                _logger.LogInformation("Lấy danh sách câu trả lời thành công với ID đề thi: {maDeThi}", maDeThi);
+                return Ok(cauTraLoiList);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách câu trả lời với ID đề thi: {maDeThi}", maDeThi);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
+        }
+     
+        [HttpGet("{maDeThi}/WithChiTietAndCauTraLoi")]
+        [SwaggerOperation("Lấy thông tin đề thi, chi tiết và câu trả lời")]
+        public async Task<IActionResult> GetDeThiWithChiTietAndCauTraLoiAsync(string maDeThi)
+        {
+            try
+            {
+                if (!Guid.TryParse(maDeThi, out var guidId))
+                {
+                    _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
+                    return BadRequest("ID đề thi không hợp lệ.");
+                }
+
+                var result = await _service.GetDeThiWithChiTietAndCauTraLoiAsync(guidId);
+                if (result == null)
+                {
+                    _logger.LogWarning("Không tìm thấy thông tin cho đề thi với ID: {maDeThi}", maDeThi);
+                    return NotFound($"Không tìm thấy thông tin cho đề thi với ID: {maDeThi}");
+                }
+
+                _logger.LogInformation("Lấy thông tin đề thi, chi tiết và câu trả lời thành công với ID: {maDeThi}", maDeThi);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy thông tin đề thi, chi tiết và câu trả lời với ID: {maDeThi}", maDeThi);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
+            }
         }
     }
 }

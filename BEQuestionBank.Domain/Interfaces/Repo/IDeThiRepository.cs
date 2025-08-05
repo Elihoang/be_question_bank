@@ -15,6 +15,7 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
         Task<DeThiDto> UpdateWithChiTietAsync(DeThiDto deThiDto);
         Task<IEnumerable<DeThi>> GetByMaMonHocAsync(Guid maMonHoc);
         Task<IEnumerable<DeThiDto>> GetApprovedDeThisAsync();
+        Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi);
 
     }
 }
