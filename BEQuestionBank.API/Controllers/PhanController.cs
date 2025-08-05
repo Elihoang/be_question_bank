@@ -230,7 +230,7 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xóa phân.");
             }
         }
-        [HttpGet("MaMonHoc/{maMonHoc}")]
+        [HttpGet("MonHoc/{maMonHoc}")]
         [SwaggerOperation("Lấy danh sách phân theo mã môn học")]
         public async Task<ActionResult<IEnumerable<Phan>>> GetByMaMonHocAsync(string maMonHoc)
         {

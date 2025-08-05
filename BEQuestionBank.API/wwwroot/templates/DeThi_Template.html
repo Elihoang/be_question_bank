@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đề thi UEF</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+            padding: 20px;
+        }
+        .form-code {
+            border: 1px solid black;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .info {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            padding: 0 20px;
+            margin-bottom: 10px;
+        }
+        .logo {
+            flex: 0 0 500px;
+        }
+        .logo img {
+            width: 100%;
+            height: auto;
+        }
+        .info-right {
+            flex: 1;
+            font-size: 16px;
+        }
+        .info-line {
+            margin-bottom: 8px;
+        }
+        .center-bold {
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .bold-red {
+            color: red;
+            font-weight: bold;
+        }
+        .underline {
+            margin: 20px 20px 0 20px;
+        }
+        .underline hr {
+            border: none;
+            border-top: 1px solid black;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="form-code">
+        BM:03/QT02-P.KT
+    </div>
+</div>
+
+<div class="info">
+    <div class="logo">
+        <img src="{LogoPath}" alt="UEF Logo">
+    </div>
+    <div class="info-right">
+        <div class="center-bold">ĐỀ THI HỌC KỲ {HocKy} NĂM HỌC</div>
+        <p>Lớp: {Lop}</p>
+        <p>Môn thi: {MonThi}</p>
+        <p>SoTC: {SoTinChi}</p>
+        <p>Ngày thi: {NgayThi}</p>
+        <p>Thời gian làm bài: {ThoiGianLam} &nbsp;&nbsp;&nbsp;&nbsp; Hình thức thi: {HinhThuc}</p>
+        <p>Mã đề (Nếu có): {MaDe}</p>
+        <div class="info-line bold-red">SỬ DỤNG TÀI LIỆU: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {TaiLieu}</div>
+    </div>
+</div>
+{DanhSachCauHoi}
+<div class="underline">
+    <hr>
+</div>
+</body>
+</html>
