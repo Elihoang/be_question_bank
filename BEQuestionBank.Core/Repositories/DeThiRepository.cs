@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using BEQuestionBank.Shared.DTOs.CauHoi;
 using BEQuestionBank.Shared.DTOs.CauTraLoi;
 
 namespace BEQuestionBank.Core.Repositories
@@ -209,13 +210,15 @@ namespace BEQuestionBank.Core.Repositories
             }).ToList();
         }
 
-        public async Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi)
+          public async Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi)
         {
             var deThi = await _context.DeThis
                 .Include(d => d.ChiTietDeThis)
                 .ThenInclude(ct => ct.CauHoi)
                 .Include(d => d.ChiTietDeThis)
                 .ThenInclude(ct => ct.CauHoi.CauTraLois)
+                .Include(d => d.MonHoc)
+                .ThenInclude(mh => mh.Khoa)
                 .FirstOrDefaultAsync(d => d.MaDeThi == maDeThi);
 
             if (deThi == null)
@@ -228,6 +231,8 @@ namespace BEQuestionBank.Core.Repositories
                 MaDeThi = deThi.MaDeThi,
                 MaMonHoc = deThi.MaMonHoc,
                 TenDeThi = deThi.TenDeThi,
+                TenMonHoc = deThi.MonHoc?.TenMonHoc,
+                TenKhoa = deThi.MonHoc?.Khoa?.TenKhoa,
                 DaDuyet = deThi.DaDuyet,
                 SoCauHoi = deThi.SoCauHoi ?? 0,
                 NgayTao = deThi.NgayTao,
@@ -237,8 +242,35 @@ namespace BEQuestionBank.Core.Repositories
                     MaDeThi = ct.MaDeThi,
                     MaCauHoi = ct.MaCauHoi,
                     MaPhan = ct.MaPhan,
-                    ThuTu = ct.ThuTu
-                }).ToList(),
+                    ThuTu = ct.ThuTu,
+                    CauHoi = new CauHoiDto
+                    {
+                        MaCauHoi = ct.CauHoi.MaCauHoi,
+                        MaPhan = ct.CauHoi.MaPhan,
+                        MaSoCauHoi = ct.CauHoi.MaSoCauHoi,
+                        NoiDung = ct.CauHoi.NoiDung,
+                        HoanVi = ct.CauHoi.HoanVi,
+                        CapDo = ct.CauHoi.CapDo,
+                        SoCauHoiCon = ct.CauHoi.SoCauHoiCon,
+                        DoPhanCach = ct.CauHoi.DoPhanCach,
+                        MaCauHoiCha = ct.CauHoi.MaCauHoiCha,
+                        XoaTam = ct.CauHoi.XoaTam,
+                        SoLanDuocThi = ct.CauHoi.SoLanDuocThi,
+                        SoLanDung = ct.CauHoi.SoLanDung,
+                        NgayTao = ct.CauHoi.NgayTao,
+                        NgaySua = ct.CauHoi.NgaySua,
+                        CLO = ct.CauHoi.CLO,
+                        CauTraLois = ct.CauHoi.CauTraLois.Select(cl => new CauTraLoiDto
+                        {
+                            MaCauTraLoi = cl.MaCauTraLoi,
+                            MaCauHoi = cl.MaCauHoi,
+                            NoiDung = cl.NoiDung,
+                            ThuTu = cl.ThuTu,
+                            LaDapAn = cl.LaDapAn,
+                            HoanVi = cl.HoanVi
+                        }).OrderBy(cl => cl.ThuTu).ToList()
+                    }
+                }).OrderBy(ct => ct.ThuTu).ToList(),
                 CauTraLoiByCauHoi = deThi.ChiTietDeThis
                     .SelectMany(ct => ct.CauHoi.CauTraLois)
                     .GroupBy(ct => ct.MaCauHoi)
@@ -252,11 +284,12 @@ namespace BEQuestionBank.Core.Repositories
                             ThuTu = cl.ThuTu,
                             LaDapAn = cl.LaDapAn,
                             HoanVi = cl.HoanVi
-                        }).ToList()
+                        }).OrderBy(cl => cl.ThuTu).ToList()
                     )
             };
 
             return result;
         }
+
     }
 }
