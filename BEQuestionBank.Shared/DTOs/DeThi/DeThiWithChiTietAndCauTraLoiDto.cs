@@ -11,6 +11,8 @@ namespace BEQuestionBank.Shared.DTOs.DeThi
         public Guid MaDeThi { get; set; }
         public Guid MaMonHoc { get; set; }
         public string TenDeThi { get; set; }
+        public string? TenMonHoc { get; set; }
+        public string? TenKhoa { get; set; }
         public bool DaDuyet { get; set; }
         public int SoCauHoi { get; set; }
         public DateTime NgayTao { get; set; }

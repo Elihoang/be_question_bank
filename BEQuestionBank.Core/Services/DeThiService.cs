@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using BEQuestionBank.Core.Helpers;
 using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Shared.DTOs.CauTraLoi;
 using BEQuestionBank.Shared.DTOs.ChiTietDeThi;
@@ -372,114 +373,124 @@ namespace BEQuestionBank.Core.Services
         
             return memoryStream;
         }
-       public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters)
-            {
-                // Retrieve exam information with details and answers
-                var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
-                if (deThiDto == null)
-                {
-                    return null;
-                }
-
-                // Fallback values if parameters are not provided
-                string monThi = parameters.MonThi ?? deThiDto.TenDeThi ?? "N/A";
-               
-                string soTinChi = parameters.SoTinChi ?? "3";
-                string hocKy = parameters.HocKy ?? "N/A";
-                string lop = parameters.Lop ?? "N/A";
-                string ngayThi = parameters.NgayThi ?? DateTime.Now.ToString("dd/MM/yyyy");
-                string thoiGianLam = parameters.ThoiGianLam ?? "N/A";
-                string hinhThuc = parameters.HinhThuc ?? "N/A";
-                string maDe = parameters.MaDe ?? "N/A";
-                string taiLieu = parameters.TaiLieuCo == true ? "CÓ" : "KHÔNG";
-
-                // Create a temporary Word document
-                string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
-                var memoryStream = new MemoryStream();
-                using (var doc = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document, true))
-                {
-                    // Initialize main document part
-                    MainDocumentPart mainPart = doc.AddMainDocumentPart();
-                    mainPart.Document = new Document();
-                    Body body = new Body();
-                    mainPart.Document.Append(body);
-
-                    // Add header section
-                    Paragraph header = new Paragraph(new Run(new Text("BM:03/QT02-P.KT")));
-                    header.ParagraphProperties = new ParagraphProperties(
-                        new Justification { Val = JustificationValues.Center },
-                        new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-                    );
-                    body.Append(header);
-
-                    // Add exam title and details
-                    body.Append(new Paragraph(
-                        new Run(new Text($"ĐỀ THI HỌC KỲ {hocKy} NĂM HỌC"))
-                        {
-                            RunProperties = new RunProperties(new Bold(), new FontSize { Val = 28 })
-                        }
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Lớp: {lop}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Môn thi: {monThi}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"SoTC: {soTinChi}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Ngày thi: {ngayThi}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Thời gian làm bài: {thoiGianLam}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Hình thức thi: {hinhThuc}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    body.Append(new Paragraph(
-                        new Run(new Text($"Mã đề: {maDe}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-
-                    // Add "SỬ DỤNG TÀI LIỆU" section
-                    body.Append(new Paragraph(
-                        new Run(new Text($"SỬ DỤNG TÀI LIỆU: {taiLieu}"))
-                    ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
+       // public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters)
+       //      {
+       //          // Retrieve exam information with details and answers
+       //          var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
+       //          if (deThiDto == null)
+       //          {
+       //              return null;
+       //          }
+       //
+       //          // Fallback values if parameters are not provided
+       //          string monThi = parameters.MonThi ?? deThiDto.TenDeThi ?? "N/A";
+       //         
+       //          string soTinChi = parameters.SoTinChi ?? "3";
+       //          string hocKy = parameters.HocKy ?? "N/A";
+       //          string lop = parameters.Lop ?? "N/A";
+       //          string ngayThi = parameters.NgayThi ?? DateTime.Now.ToString("dd/MM/yyyy");
+       //          string thoiGianLam = parameters.ThoiGianLam ?? "N/A";
+       //          string hinhThuc = parameters.HinhThuc ?? "N/A";
+       //          string maDe = parameters.MaDe ?? "N/A";
+       //          string taiLieu = parameters.TaiLieuCo == true ? "CÓ" : "KHÔNG";
+       //
+       //          // Create a temporary Word document
+       //          string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
+       //          var memoryStream = new MemoryStream();
+       //          using (var doc = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document, true))
+       //          {
+       //              // Initialize main document part
+       //              MainDocumentPart mainPart = doc.AddMainDocumentPart();
+       //              mainPart.Document = new Document();
+       //              Body body = new Body();
+       //              mainPart.Document.Append(body);
+       //
+       //              // Add header section
+       //              Paragraph header = new Paragraph(new Run(new Text("BM:03/QT02-P.KT")));
+       //              header.ParagraphProperties = new ParagraphProperties(
+       //                  new Justification { Val = JustificationValues.Center },
+       //                  new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
+       //              );
+       //              body.Append(header);
+       //
+       //              // Add exam title and details
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"ĐỀ THI HỌC KỲ {hocKy} NĂM HỌC"))
+       //                  {
+       //                      RunProperties = new RunProperties(new Bold(), new FontSize { Val = 28 })
+       //                  }
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Lớp: {lop}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Môn thi: {monThi}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"SoTC: {soTinChi}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Ngày thi: {ngayThi}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Thời gian làm bài: {thoiGianLam}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Hình thức thi: {hinhThuc}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"Mã đề: {maDe}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
+       //
+       //              // Add "SỬ DỤNG TÀI LIỆU" section
+       //              body.Append(new Paragraph(
+       //                  new Run(new Text($"SỬ DỤNG TÀI LIỆU: {taiLieu}"))
+       //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
+       //            
+       //              foreach (var chiTiet in deThiDto.ChiTietDeThis)
+       //              {
+       //                  var cauHoi = await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
+       //                  Paragraph questionPara = new Paragraph(
+       //                      new Run(new Text($"  - STT: {chiTiet.ThuTu}, Nội dung: {cauHoi.NoiDung}, MaSoCauHoi: {cauHoi.MaSoCauHoi}, CLO: {cauHoi.CLO}"))
+       //                  );
+       //                  body.Append(questionPara);
+       //
+       //                  if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
+       //                  {
+       //                      foreach (var cauTraLoi in cauTraLoiList)
+       //                      {
+       //                          body.Append(new Paragraph(
+       //                              new Run(new Text($"     - Đáp án {cauTraLoi.ThuTu}: {cauTraLoi.NoiDung} {(cauTraLoi.LaDapAn ? "(Đáp án đúng)" : "")}"))
+       //                          ));
+       //                      }
+       //                  }
+       //              }
+       //
+       //              // Save document
+       //              mainPart.Document.Save();
+       //          }
+       //
+       //          memoryStream.Position = 0;
+       //          return memoryStream;
+       //      }
                   
-                    foreach (var chiTiet in deThiDto.ChiTietDeThis)
-                    {
-                        var cauHoi = await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
-                        Paragraph questionPara = new Paragraph(
-                            new Run(new Text($"  - STT: {chiTiet.ThuTu}, Nội dung: {cauHoi.NoiDung}, MaSoCauHoi: {cauHoi.MaSoCauHoi}, CLO: {cauHoi.CLO}"))
-                        );
-                        body.Append(questionPara);
+       public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters = null)
+       {
+           var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
+           if (deThiDto == null)
+           {
+               return null;
+           }
 
-                        if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
-                        {
-                            foreach (var cauTraLoi in cauTraLoiList)
-                            {
-                                body.Append(new Paragraph(
-                                    new Run(new Text($"     - Đáp án {cauTraLoi.ThuTu}: {cauTraLoi.NoiDung} {(cauTraLoi.LaDapAn ? "(Đáp án đúng)" : "")}"))
-                                ));
-                            }
-                        }
-                    }
-
-                    // Save document
-                    mainPart.Document.Save();
-                }
-
-                memoryStream.Position = 0;
-                return memoryStream;
-            }
-                  
+           return await HtmlConverter.ExportWordTemplateAsync(deThiDto, parameters);
+       }
         public async Task<IEnumerable<CauTraLoiDto>> GetCauTraLoiByDeThiAsync(Guid maDeThi)
         {
             // Lấy thông tin đề thi với chi tiết
