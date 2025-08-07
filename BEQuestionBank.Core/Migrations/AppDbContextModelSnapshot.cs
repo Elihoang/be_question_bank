@@ -85,9 +85,6 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<short>("CapDo")
                         .HasColumnType("smallint");
 
-                    b.Property<Guid?>("CauHoiChaMaCauHoi")
-                        .HasColumnType("uuid");
-
                     b.Property<float?>("DoPhanCach")
                         .HasColumnType("real")
                         .HasColumnName("DoPhanCachCauHoi");
@@ -136,7 +133,7 @@ namespace BEQuestionBank.Core.Migrations
 
                     b.HasKey("MaCauHoi");
 
-                    b.HasIndex("CauHoiChaMaCauHoi");
+                    b.HasIndex("MaCauHoiCha");
 
                     b.HasIndex("MaPhan");
 
@@ -176,10 +173,6 @@ namespace BEQuestionBank.Core.Migrations
             modelBuilder.Entity("BEQuestionBank.Domain.Models.ChiTietDeThi", b =>
                 {
                     b.Property<Guid>("MaDeThi")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DeThiMaDeThi")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("MaCauHoi")
@@ -191,9 +184,7 @@ namespace BEQuestionBank.Core.Migrations
                     b.Property<int?>("ThuTu")
                         .HasColumnType("integer");
 
-                    b.HasKey("MaDeThi");
-
-                    b.HasIndex("DeThiMaDeThi");
+                    b.HasKey("MaDeThi", "MaCauHoi");
 
                     b.HasIndex("MaCauHoi");
 
@@ -240,26 +231,23 @@ namespace BEQuestionBank.Core.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("CauTraLoiMaCauTraLoi")
-                        .HasColumnType("uuid");
-
                     b.Property<int?>("LoaiFile")
                         .HasColumnType("integer");
 
                     b.Property<Guid?>("MaCauHoi")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("MaCauTraLoi")
-                        .HasColumnType("text");
+                    b.Property<Guid?>("MaCauTraLoi")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TenFile")
                         .HasColumnType("text");
 
                     b.HasKey("MaFile");
 
-                    b.HasIndex("CauTraLoiMaCauTraLoi");
-
                     b.HasIndex("MaCauHoi");
+
+                    b.HasIndex("MaCauTraLoi");
 
                     b.ToTable("Files");
                 });
@@ -271,7 +259,6 @@ namespace BEQuestionBank.Core.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("MoTa")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("NgayCapNhap")
@@ -349,17 +336,17 @@ namespace BEQuestionBank.Core.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("KhoaMaKhoa")
+                    b.Property<Guid?>("MaKhoa")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("MaKhoa")
-                        .HasColumnType("text");
 
                     b.Property<string>("MatKhau")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("NgayCapNhap")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NgayDangNhapCuoi")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("NgayTao")
@@ -374,7 +361,7 @@ namespace BEQuestionBank.Core.Migrations
 
                     b.HasKey("MaNguoiDung");
 
-                    b.HasIndex("KhoaMaKhoa");
+                    b.HasIndex("MaKhoa");
 
                     b.ToTable("NguoiDung");
                 });
@@ -476,16 +463,17 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     b.HasOne("BEQuestionBank.Domain.Models.CauHoi", "CauHoiCha")
                         .WithMany("CauHoiCons")
-                        .HasForeignKey("CauHoiChaMaCauHoi");
+                        .HasForeignKey("MaCauHoiCha")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BEQuestionBank.Domain.Models.Phan", "Phan")
-                        .WithMany()
+                        .WithMany("CauHois")
                         .HasForeignKey("MaPhan")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("BEQuestionBank.Domain.Models.NguoiDung", "NguoiDung")
-                        .WithMany("CauHois")
+                        .WithMany()
                         .HasForeignKey("NguoiTao");
 
                     b.Navigation("CauHoiCha");
@@ -508,15 +496,15 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.ChiTietDeThi", b =>
                 {
-                    b.HasOne("BEQuestionBank.Domain.Models.DeThi", "DeThi")
-                        .WithMany("ChiTietDeThis")
-                        .HasForeignKey("DeThiMaDeThi")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("BEQuestionBank.Domain.Models.CauHoi", "CauHoi")
                         .WithMany()
                         .HasForeignKey("MaCauHoi")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BEQuestionBank.Domain.Models.DeThi", "DeThi")
+                        .WithMany("ChiTietDeThis")
+                        .HasForeignKey("MaDeThi")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -546,13 +534,13 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.File", b =>
                 {
-                    b.HasOne("BEQuestionBank.Domain.Models.CauTraLoi", "CauTraLoi")
-                        .WithMany("FileDinhKems")
-                        .HasForeignKey("CauTraLoiMaCauTraLoi");
-
                     b.HasOne("BEQuestionBank.Domain.Models.CauHoi", "CauHoi")
                         .WithMany("Files")
                         .HasForeignKey("MaCauHoi");
+
+                    b.HasOne("BEQuestionBank.Domain.Models.CauTraLoi", "CauTraLoi")
+                        .WithMany("FileDinhKems")
+                        .HasForeignKey("MaCauTraLoi");
 
                     b.Navigation("CauHoi");
 
@@ -574,7 +562,7 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     b.HasOne("BEQuestionBank.Domain.Models.Khoa", "Khoa")
                         .WithMany()
-                        .HasForeignKey("KhoaMaKhoa");
+                        .HasForeignKey("MaKhoa");
 
                     b.Navigation("Khoa");
                 });
@@ -582,7 +570,7 @@ namespace BEQuestionBank.Core.Migrations
             modelBuilder.Entity("BEQuestionBank.Domain.Models.Phan", b =>
                 {
                     b.HasOne("BEQuestionBank.Domain.Models.MonHoc", "MonHoc")
-                        .WithMany("DanhSachPhan")
+                        .WithMany("Phans")
                         .HasForeignKey("MaMonHoc")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -635,10 +623,10 @@ namespace BEQuestionBank.Core.Migrations
 
             modelBuilder.Entity("BEQuestionBank.Domain.Models.MonHoc", b =>
                 {
-                    b.Navigation("DanhSachPhan");
+                    b.Navigation("Phans");
                 });
 
-            modelBuilder.Entity("BEQuestionBank.Domain.Models.NguoiDung", b =>
+            modelBuilder.Entity("BEQuestionBank.Domain.Models.Phan", b =>
                 {
                     b.Navigation("CauHois");
                 });

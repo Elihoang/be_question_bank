@@ -18,8 +18,12 @@ public class NguoiDung : ModelBase
     public string? Email { get; set; }
     public VaiTroNguoiDung VaiTro { get; set; }
     public bool BiKhoa { get; set; } = false;
-    public String? MaKhoa { get; set; }
+    [ForeignKey("Khoa")]
+    public Guid? MaKhoa { get; set; }
+
+    public DateTime? NgayDangNhapCuoi { get; set; }
 
     public virtual Khoa? Khoa { get; set; }
-    public ICollection<CauHoi> CauHois { get; set; }
+    
+    
 }

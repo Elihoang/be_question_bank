@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BEQuestionBank.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,7 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     MaKhoa = table.Column<Guid>(type: "uuid", nullable: false),
                     TenKhoa = table.Column<string>(type: "text", nullable: false),
-                    MoTa = table.Column<string>(type: "text", nullable: false),
+                    MoTa = table.Column<string>(type: "text", nullable: true),
                     XoaTamKhoa = table.Column<bool>(type: "boolean", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -76,29 +76,6 @@ namespace BEQuestionBank.Core.Migrations
                         column: x => x.KhoaMaKhoa,
                         principalTable: "Khoa",
                         principalColumn: "MaKhoa");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DeThi",
-                columns: table => new
-                {
-                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenDeThi = table.Column<string>(type: "text", nullable: false),
-                    DaDuyet = table.Column<bool>(type: "boolean", nullable: false),
-                    SoCauHoi = table.Column<int>(type: "integer", nullable: true),
-                    NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DeThi", x => x.MaDeThi);
-                    table.ForeignKey(
-                        name: "FK_DeThi_MonHoc_MaMonHoc",
-                        column: x => x.MaMonHoc,
-                        principalTable: "MonHoc",
-                        principalColumn: "MaMonHoc",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -207,7 +184,6 @@ namespace BEQuestionBank.Core.Migrations
                     CLO = table.Column<int>(type: "integer", nullable: true),
                     NgaySua = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     NguoiTao = table.Column<Guid>(type: "uuid", nullable: true),
-                    CauHoiChaMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
                     NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -215,10 +191,11 @@ namespace BEQuestionBank.Core.Migrations
                 {
                     table.PrimaryKey("PK_CauHoi", x => x.MaCauHoi);
                     table.ForeignKey(
-                        name: "FK_CauHoi_CauHoi_CauHoiChaMaCauHoi",
-                        column: x => x.CauHoiChaMaCauHoi,
+                        name: "FK_CauHoi_CauHoi_MaCauHoiCha",
+                        column: x => x.MaCauHoiCha,
                         principalTable: "CauHoi",
-                        principalColumn: "MaCauHoi");
+                        principalColumn: "MaCauHoi",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_CauHoi_NguoiDung_NguoiTao",
                         column: x => x.NguoiTao,
@@ -255,35 +232,31 @@ namespace BEQuestionBank.Core.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ChiTietDeThi",
+                name: "DeThi",
                 columns: table => new
                 {
                     MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
-                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
-                    ThuTu = table.Column<int>(type: "integer", nullable: true),
-                    DeThiMaDeThi = table.Column<Guid>(type: "uuid", nullable: false)
+                    MaMonHoc = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenDeThi = table.Column<string>(type: "text", nullable: false),
+                    DaDuyet = table.Column<bool>(type: "boolean", nullable: false),
+                    SoCauHoi = table.Column<int>(type: "integer", nullable: true),
+                    CauHoiMaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
+                    NgayTao = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    NgayCapNhap = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ChiTietDeThi", x => x.MaDeThi);
+                    table.PrimaryKey("PK_DeThi", x => x.MaDeThi);
                     table.ForeignKey(
-                        name: "FK_ChiTietDeThi_CauHoi_MaCauHoi",
-                        column: x => x.MaCauHoi,
+                        name: "FK_DeThi_CauHoi_CauHoiMaCauHoi",
+                        column: x => x.CauHoiMaCauHoi,
                         principalTable: "CauHoi",
-                        principalColumn: "MaCauHoi",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "MaCauHoi");
                     table.ForeignKey(
-                        name: "FK_ChiTietDeThi_DeThi_DeThiMaDeThi",
-                        column: x => x.DeThiMaDeThi,
-                        principalTable: "DeThi",
-                        principalColumn: "MaDeThi",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ChiTietDeThi_Phan_MaPhan",
-                        column: x => x.MaPhan,
-                        principalTable: "Phan",
-                        principalColumn: "MaPhan",
+                        name: "FK_DeThi_MonHoc_MaMonHoc",
+                        column: x => x.MaMonHoc,
+                        principalTable: "MonHoc",
+                        principalColumn: "MaMonHoc",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -295,8 +268,7 @@ namespace BEQuestionBank.Core.Migrations
                     MaCauHoi = table.Column<Guid>(type: "uuid", nullable: true),
                     TenFile = table.Column<string>(type: "text", nullable: true),
                     LoaiFile = table.Column<int>(type: "integer", nullable: true),
-                    MaCauTraLoi = table.Column<string>(type: "text", nullable: true),
-                    CauTraLoiMaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: true)
+                    MaCauTraLoi = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -307,10 +279,42 @@ namespace BEQuestionBank.Core.Migrations
                         principalTable: "CauHoi",
                         principalColumn: "MaCauHoi");
                     table.ForeignKey(
-                        name: "FK_Files_CauTraLoi_CauTraLoiMaCauTraLoi",
-                        column: x => x.CauTraLoiMaCauTraLoi,
+                        name: "FK_Files_CauTraLoi_MaCauTraLoi",
+                        column: x => x.MaCauTraLoi,
                         principalTable: "CauTraLoi",
                         principalColumn: "MaCauTraLoi");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChiTietDeThi",
+                columns: table => new
+                {
+                    MaDeThi = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaPhan = table.Column<Guid>(type: "uuid", nullable: false),
+                    MaCauHoi = table.Column<Guid>(type: "uuid", nullable: false),
+                    ThuTu = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChiTietDeThi", x => x.MaDeThi);
+                    table.ForeignKey(
+                        name: "FK_ChiTietDeThi_CauHoi_MaCauHoi",
+                        column: x => x.MaCauHoi,
+                        principalTable: "CauHoi",
+                        principalColumn: "MaCauHoi",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ChiTietDeThi_DeThi_MaDeThi",
+                        column: x => x.MaDeThi,
+                        principalTable: "DeThi",
+                        principalColumn: "MaDeThi",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ChiTietDeThi_Phan_MaPhan",
+                        column: x => x.MaPhan,
+                        principalTable: "Phan",
+                        principalColumn: "MaPhan",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -319,9 +323,9 @@ namespace BEQuestionBank.Core.Migrations
                 column: "MaNguoiDung");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CauHoi_CauHoiChaMaCauHoi",
+                name: "IX_CauHoi_MaCauHoiCha",
                 table: "CauHoi",
-                column: "CauHoiChaMaCauHoi");
+                column: "MaCauHoiCha");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CauHoi_MaPhan",
@@ -339,11 +343,6 @@ namespace BEQuestionBank.Core.Migrations
                 column: "MaCauHoi");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChiTietDeThi_DeThiMaDeThi",
-                table: "ChiTietDeThi",
-                column: "DeThiMaDeThi");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ChiTietDeThi_MaCauHoi",
                 table: "ChiTietDeThi",
                 column: "MaCauHoi");
@@ -354,19 +353,24 @@ namespace BEQuestionBank.Core.Migrations
                 column: "MaPhan");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DeThi_CauHoiMaCauHoi",
+                table: "DeThi",
+                column: "CauHoiMaCauHoi");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DeThi_MaMonHoc",
                 table: "DeThi",
                 column: "MaMonHoc");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Files_CauTraLoiMaCauTraLoi",
-                table: "Files",
-                column: "CauTraLoiMaCauTraLoi");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Files_MaCauHoi",
                 table: "Files",
                 column: "MaCauHoi");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Files_MaCauTraLoi",
+                table: "Files",
+                column: "MaCauTraLoi");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MonHoc_MaKhoa",
@@ -435,6 +439,11 @@ namespace BEQuestionBank.Core.Migrations
 
             migrationBuilder.DropTable(
                 name: "Khoa");
+            
+            migrationBuilder.DropColumn(
+                name: "CauHoiMaCauHoi",
+                table: "DeThi");
+
         }
     }
 }

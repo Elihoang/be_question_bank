@@ -22,7 +22,11 @@ namespace BEQuestionBank.API.Controllers
             if (await _authService.ValidateUserAsync(loginDto.TenDangNhap, loginDto.MatKhau))
             {
                 var response = await _authService.GenerateJwtTokenAsync(loginDto.TenDangNhap);
-                return Ok(response);
+                if (response == null)
+                {
+                    return Unauthorized("Invalid credentials or account locked");
+                }
+                return Ok(response); 
             }
 
             return Unauthorized("Invalid credentials or account locked");

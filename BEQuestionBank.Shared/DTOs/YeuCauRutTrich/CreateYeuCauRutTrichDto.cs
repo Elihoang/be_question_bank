@@ -1,0 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace BEQuestionBank.Shared.DTOs;
+
+public class CreateYeuCauRutTrichDto
+{
+    [Required(ErrorMessage = "Mã người dùng không được để trống.")]
+    public Guid MaNguoiDung { get; set; }
+    [Required(ErrorMessage = "Mã môn học không được để trống.")]
+    public Guid MaMonHoc { get; set; }
+    public string? NoiDungRutTrich { get; set; }
+    public string? GhiChu { get; set; }
+}

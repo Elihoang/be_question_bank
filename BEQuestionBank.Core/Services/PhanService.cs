@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using BEQuestionBank.Application.DTOs;
 using BEQuestionBank.Domain.Interfaces.Repo;
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
@@ -52,8 +53,25 @@ public class PhanService : IPhanService
         return await _repository.ExistsAsync(predicate);
     }
 
-    public async Task<IEnumerable<Phan>> GetByMaMonHocAsync(Guid maMonHoc)
+    public async Task<IEnumerable<PhanDto>> GetByMaMonHocAsync(Guid maMonHoc)
     {
-        return await _repository.GetByMaMonHocAsync(maMonHoc);
+        var phans = await _repository.GetByMaMonHocAsync(maMonHoc);
+
+        var phanDtos = phans.Select(p => new PhanDto
+        {
+            MaPhan = p.MaPhan,
+            MaMonHoc = p.MaMonHoc,
+            TenPhan = p.TenPhan,
+            NoiDung = p.NoiDung,
+            ThuTu = p.ThuTu,
+            SoLuongCauHoi = p.SoLuongCauHoi,
+            MaPhanCha = p.MaPhanCha,
+            MaSoPhan = p.MaSoPhan,
+            XoaTam = p.XoaTam,
+            LaCauHoiNhom = p.LaCauHoiNhom,
+            TenMonHoc = p.MonHoc?.TenMonHoc
+        }).ToList();
+
+        return phanDtos;
     }
 }

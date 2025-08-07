@@ -7,7 +7,7 @@ namespace BEQuestionBank.Domain.Models;
 public class YeuCauRutTrich
 {
     [Key]
-    public Guid MaYeuCau { get; set; }
+    public Guid MaYeuCau { get; set; } = Guid.NewGuid();
     [ForeignKey("NguoiDung")]
     public Guid MaNguoiDung { get; set; }
     [ForeignKey("MonHoc")]

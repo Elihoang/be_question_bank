@@ -9,7 +9,7 @@ namespace BEQuestionBank.Shared.DTOs.user
     public class ResetPasswordDto
     {
         public string TenDangNhap { get; set; }
-        public string MaKhoa { get; set; }
+        public Guid MaKhoa { get; set; }
         public string NewPassword { get; set; }
     }
 }
