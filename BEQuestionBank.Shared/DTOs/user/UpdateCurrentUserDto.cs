@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BEQuestionBank.Shared.DTOs.user
 {
-    public class ResetPasswordDto
+    public class UpdateCurrentUserDto
     {
-        public string TenDangNhap { get; set; }
-        public string NewPassword { get; set; }
-        public string Otp { get; set; }
+        public string HoTen { get; set; }
+
+        public string Email { get; set; }
     }
 }

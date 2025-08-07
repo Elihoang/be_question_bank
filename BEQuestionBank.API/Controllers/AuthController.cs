@@ -2,6 +2,7 @@
 using BEQuestionBank.Shared.DTOs.user;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -17,49 +18,81 @@ namespace BEQuestionBank.API.Controllers
         }
 
         [HttpPost("login")]
+        [SwaggerOperation(Summary = "Đăng nhập")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            if (await _authService.ValidateUserAsync(loginDto.TenDangNhap, loginDto.MatKhau))
+            try
             {
-                var response = await _authService.GenerateJwtTokenAsync(loginDto.TenDangNhap);
-                if (response == null)
+                if (await _authService.ValidateUserAsync(loginDto.TenDangNhap, loginDto.MatKhau))
                 {
-                    return Unauthorized("Invalid credentials or account locked");
+                    var response = await _authService.GenerateJwtTokenAsync(loginDto.TenDangNhap);
+                    if (response == null)
+                    {
+                        return Unauthorized(new { error = "Tên đăng nhập hoặc mật khẩu không hợp lệ hoặc tài khoản bị khóa" });
+                    }
+                    return Ok(response);
                 }
-                return Ok(response); 
+                return Unauthorized(new { error = "Tên đăng nhập hoặc mật khẩu không hợp lệ hoặc tài khoản bị khóa" });
             }
-
-            return Unauthorized("Invalid credentials or account locked");
+            catch (Exception ex)
+            {
+               
+                return StatusCode(500, new { error = "Đã xảy ra lỗi trong quá trình đăng nhập", details = ex.Message });
+            }
         }
 
         [HttpPost("register")]
+        [SwaggerOperation(Summary = "Đăng kí")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            if (await _authService.RegisterAsync(registerDto))
+            try
             {
-                return Ok("Registration successful");
+                if (await _authService.RegisterAsync(registerDto))
+                {
+                    return Ok("Đăng ký thành công");
+                }
+                return BadRequest("Tên đăng nhập đã tồn tại");
             }
-            return BadRequest("Username already exists");
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Đã xảy ra lỗi trong quá trình đăng ký");
+            }
         }
 
         [HttpPost("forgot-password")]
+        [SwaggerOperation(Summary = "Yêu cầu mã OTP để đặt lại mật khẩu")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotPasswordDto)
         {
-            if (await _authService.ForgotPasswordAsync(forgotPasswordDto))
+            try
             {
-                return Ok("Password reset link sent");
+                if (await _authService.SendOtpAsync(forgotPasswordDto))
+                {
+                    return Ok("Mã OTP đã được gửi đến email của bạn");
+                }
+                return BadRequest("Tên đăng nhập hoặc email không hợp lệ");
             }
-            return BadRequest("Invalid username or email");
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Đã xảy ra lỗi trong quá trình yêu cầu mã OTP", details = ex.Message });
+            }
         }
 
         [HttpPost("reset-password")]
+        [SwaggerOperation(Summary = "Đặt lại mật khẩu bằng mã OTP")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
         {
-            if (await _authService.ResetPasswordAsync(resetPasswordDto))
+            try
             {
-                return Ok("Password reset successful");
+                if (await _authService.ResetPasswordWithOtpAsync(resetPasswordDto))
+                {
+                    return Ok("Đặt lại mật khẩu thành công");
+                }
+                return BadRequest("Mã OTP hoặc tên đăng nhập không hợp lệ");
             }
-            return BadRequest("Invalid token or username");
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Đã xảy ra lỗi trong quá trình đặt lại mật khẩu", details = ex.Message });
+            }
         }
     }
 }

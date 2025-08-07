@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -76,6 +77,67 @@ namespace BEQuestionBank.API.Controllers
             }
         }
 
+        [HttpPatch("current")]
+        [SwaggerOperation(Summary = "Cập nhật thông tin người dùng hiện tại")]
+        [Authorize]
+        public async Task<IActionResult> UpdateCurrentUser([FromBody] UpdateCurrentUserDto userDto)
+        {
+            Serilog.Log.Information("Received userDto: {@UserDto}", userDto);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                Serilog.Log.Warning("ModelState invalid: {Errors}", errors);
+                return BadRequest(new { message = "Dữ liệu không hợp lệ", errors = errors });
+            }
+
+            if (userDto == null)
+            {
+                Serilog.Log.Warning("userDto is null");
+                return BadRequest(new { message = "Dữ liệu người dùng không được để trống" });
+            }
+
+            var username = User.Identity?.Name;
+            Serilog.Log.Information("Username from token: {Username}", username);
+            if (string.IsNullOrEmpty(username))
+            {
+                return Unauthorized(new { message = "Không xác định được người dùng" });
+            }
+
+            var user = await _userService.GetByUsernameAsync(username);
+            if (user == null)
+            {
+                return NotFound(new { message = "Không tìm thấy người dùng" });
+            }
+
+            user.HoTen = userDto.HoTen?.Trim() ?? user.HoTen;
+            user.Email = userDto.Email?.Trim() ?? user.Email;
+
+            if (!string.IsNullOrEmpty(user.Email) && !new EmailAddressAttribute().IsValid(user.Email))
+            {
+                return BadRequest(new { message = "Email không hợp lệ" });
+            }
+
+            try
+            {
+                var updatedUser = await _userService.UpdateAsync(user.MaNguoiDung, user);
+                var updatedUserDto = new NguoiDungDto
+                {
+                    MaNguoiDung = updatedUser.MaNguoiDung,
+                    TenDangNhap = updatedUser.TenDangNhap,
+                    HoTen = updatedUser.HoTen,
+                    Email = updatedUser.Email,
+                    VaiTro = updatedUser.VaiTro,
+                    BiKhoa = updatedUser.BiKhoa
+                };
+                return Ok(updatedUserDto);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Lỗi khi cập nhật người dùng hiện tại");
+                return StatusCode(500, new { message = "Lỗi hệ thống", chi_tiet = ex.Message });
+            }
+        }
+
         [HttpPost]
         [SwaggerOperation(Summary = "Tạo người dùng mới")]
         public async Task<IActionResult> CreateUser([FromBody] NguoiDungDto userDto)
@@ -90,7 +152,7 @@ namespace BEQuestionBank.API.Controllers
                 var user = new NguoiDung
                 {
                     TenDangNhap = userDto.TenDangNhap,
-                    MatKhau = userDto.TenDangNhap, // Mật khẩu mặc định bằng tên đăng nhập, cần cải thiện
+                    MatKhau = userDto.TenDangNhap,
                     HoTen = userDto.HoTen,
                     Email = userDto.Email,
                     VaiTro = userDto.VaiTro,
