@@ -2,6 +2,6 @@ namespace BEQuestionBank.Domain.Enums;
 
 public enum FileType
 {
-    Image = 1,
-    Audio = 2
+    Audio = 1,
+    Image = 2,
 }

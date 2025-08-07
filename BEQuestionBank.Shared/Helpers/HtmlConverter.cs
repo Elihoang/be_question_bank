@@ -8,7 +8,7 @@ using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using BEQuestionBank.Shared.DTOs.DeThi;
 
-namespace BEQuestionBank.Core.Helpers
+namespace BEQuestionBank.Shared.Helpers
 {
     public static class HtmlConverter
     {
