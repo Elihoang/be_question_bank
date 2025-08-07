@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,42 +23,16 @@ namespace BEQuestionBank.Core.Repositories
 
         public async Task<NguoiDung> GetByIdAsync(Guid maNguoiDung)
         {
-            try
-            {
-                var user = await _context.NguoiDungs
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(nd => nd.MaNguoiDung == maNguoiDung);
-                if (user == null)
-                {
-                    throw new Exception("Không tìm thấy người dùng");
-                }
-                return user;
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi lấy thông tin người dùng theo ID: {MaNguoiDung}", maNguoiDung);
-                throw;
-            }
+            return await _context.NguoiDungs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(nd => nd.MaNguoiDung == maNguoiDung);
         }
 
         public async Task<NguoiDung> GetByUsernameAsync(string tenDangNhap)
         {
-            try
-            {
-                var user = await _context.NguoiDungs
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(nd => nd.TenDangNhap == tenDangNhap);
-                if (user == null)
-                {
-                    throw new Exception("Không tìm thấy người dùng với tên đăng nhập này");
-                }
-                return user;
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi lấy thông tin người dùng theo TenDangNhap: {TenDangNhap}", tenDangNhap);
-                throw;
-            }
+            return await _context.NguoiDungs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(nd => nd.TenDangNhap == tenDangNhap);
         }
 
         public async Task<IEnumerable<NguoiDung>> GetByVaiTroAsync(VaiTroNguoiDung vaiTro)
@@ -78,25 +53,20 @@ namespace BEQuestionBank.Core.Repositories
 
         public async Task<bool> IsLockedAsync(string tenDangNhap)
         {
-            var user = await _context.NguoiDungs
+            return await _context.NguoiDungs
                 .AsNoTracking()
-                .FirstOrDefaultAsync(nd => nd.TenDangNhap == tenDangNhap);
-            return user?.BiKhoa ?? false;
+                .Where(nd => nd.TenDangNhap == tenDangNhap)
+                .Select(nd => nd.BiKhoa)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<NguoiDung> GetByResetCodeAsync(Guid maKhoa)
         {
-            var user = await _context.NguoiDungs
+            return await _context.NguoiDungs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(nd => nd.MaKhoa == maKhoa);
-            if (user == null)
-            {
-                throw new Exception("Mã đặt lại không hợp lệ");
-            }
-            return user;
         }
 
-        // Triển khai các phương thức từ IRepository<NguoiDung>
         public async Task<IEnumerable<NguoiDung>> GetAllAsync()
         {
             return await _context.NguoiDungs
@@ -104,7 +74,7 @@ namespace BEQuestionBank.Core.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<NguoiDung>> FindAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<IEnumerable<NguoiDung>> FindAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
             return await _context.NguoiDungs
                 .AsNoTracking()
@@ -112,7 +82,7 @@ namespace BEQuestionBank.Core.Repositories
                 .ToListAsync();
         }
 
-        public async Task<NguoiDung> FirstOrDefaultAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<NguoiDung> FirstOrDefaultAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
             return await _context.NguoiDungs
                 .AsNoTracking()
@@ -137,9 +107,10 @@ namespace BEQuestionBank.Core.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> ExistsAsync(System.Linq.Expressions.Expression<Func<NguoiDung, bool>> predicate)
+        public async Task<bool> ExistsAsync(Expression<Func<NguoiDung, bool>> predicate)
         {
-            return await _context.NguoiDungs.AnyAsync(predicate);
+            return await _context.NguoiDungs
+                .AnyAsync(predicate);
         }
     }
 }

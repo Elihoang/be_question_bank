@@ -13,7 +13,7 @@ namespace BEQuestionBank.Domain.Interfaces.Service
         Task<AuthResponseDto> GenerateJwtTokenAsync(string username);
         Task<bool> ValidateUserAsync(string username, string password);
         Task<bool> RegisterAsync(RegisterDto registerDto);
-        Task<bool> ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto);
-        Task<bool> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
+        Task<bool> SendOtpAsync(ForgotPasswordDto forgotPasswordDto);
+        Task<bool> ResetPasswordWithOtpAsync(ResetPasswordDto resetPasswordDto);
     }
 }

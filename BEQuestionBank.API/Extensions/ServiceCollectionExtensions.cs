@@ -51,18 +51,20 @@ public static class ServiceCollectionExtensions
         // Word Import
         services.AddScoped<WordImportService>();
         
-        // Nguoi Dung
+        // Auth
         services.AddScoped<INguoiDungRepository, NguoiDungRepository>();
         services.AddScoped<JwtService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<WordImportService>();
-        
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddMemoryCache();
+        services.AddScoped<IEmailService, EmailService>();
         //De Thi
         services.AddScoped<IDeThiRepository, DeThiRepository>();
         services.AddScoped<IDeThiService, DeThiService>();
         
         // User
-   
+  
         services.AddScoped<INguoiDungService, NguoiDungService>();
         
         //yeu cau rut trich
