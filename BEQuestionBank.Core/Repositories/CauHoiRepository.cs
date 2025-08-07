@@ -11,6 +11,7 @@ using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs.CauHoi;
 using BEQuestionBank.Shared.DTOs.CauTraLoi;
 using Microsoft.EntityFrameworkCore.Storage;
+using BEQuestionBank.Shared.DTOs.File;
 
 namespace BEQuestionBank.Infrastructure.Repositories
 {
@@ -254,34 +255,26 @@ namespace BEQuestionBank.Infrastructure.Repositories
         public async Task<CauHoiDto> AddWithAnswersAsync(CreateCauHoiWithAnswersDto cauHoiDto)
         {
             if (cauHoiDto == null)
-            {
                 throw new ArgumentNullException(nameof(cauHoiDto), "Dữ liệu câu hỏi không được null.");
-            }
 
             if (string.IsNullOrWhiteSpace(cauHoiDto.NoiDung))
-            {
                 throw new ArgumentException("Nội dung câu hỏi không được để trống.", nameof(cauHoiDto.NoiDung));
-            }
 
             if (cauHoiDto.MaCauHoiCha.HasValue)
             {
                 var parentExists = await _context.CauHois.AnyAsync(c => c.MaCauHoi == cauHoiDto.MaCauHoiCha.Value);
                 if (!parentExists)
-                {
                     throw new ArgumentException($"Câu hỏi cha với mã {cauHoiDto.MaCauHoiCha} không tồn tại.");
-                }
             }
 
             if (cauHoiDto.CauTraLois.Any())
             {
                 var correctAnswersCount = cauHoiDto.CauTraLois.Count(a => a.LaDapAn);
                 if (correctAnswersCount > 1)
-                {
                     throw new ArgumentException("Chỉ được phép có một câu trả lời đúng.");
-                }
             }
 
-            // Không mở transaction ở đây
+            // Tạo đối tượng câu hỏi
             var cauHoi = new CauHoi
             {
                 MaCauHoi = Guid.NewGuid(),
@@ -301,9 +294,32 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 NgaySua = null
             };
 
+            // Thêm câu hỏi vào DB
             await _dbSet.AddAsync(cauHoi);
+
+            // Xử lý thêm file (nếu có)
+            var fileEntities = new List<Domain.Models.File>();
+            foreach (var file in cauHoiDto.Files)
+            {
+                var fileEntity = new Domain.Models.File
+                {
+                    MaFile = Guid.NewGuid(),
+                    MaCauHoi = cauHoi.MaCauHoi,
+                    TenFile = file.TenFile
+                };
+                fileEntities.Add(fileEntity);
+            }
+
+            if (fileEntities.Any())
+            {
+                await _context.Files.AddRangeAsync(fileEntities);
+            }
+
+            // Lưu tất cả thay đổi cùng lúc (Câu hỏi + File)
             await _context.SaveChangesAsync();
 
+            // Thêm các câu trả lời
+            var cauTraLoiDtos = new List<CauTraLoiDto>();
             foreach (var answerDto in cauHoiDto.CauTraLois)
             {
                 var cauTraLoi = new CauTraLoi
@@ -317,9 +333,20 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 };
 
                 await _cauTraLoiRepository.AddAsync(cauTraLoi);
+
+                cauTraLoiDtos.Add(new CauTraLoiDto
+                {
+                    MaCauTraLoi = cauTraLoi.MaCauTraLoi,
+                    MaCauHoi = cauHoi.MaCauHoi,
+                    NoiDung = cauTraLoi.NoiDung,
+                    ThuTu = cauTraLoi.ThuTu,
+                    LaDapAn = cauTraLoi.LaDapAn,
+                    HoanVi = cauTraLoi.HoanVi
+                });
             }
 
-            var result = new CauHoiDto
+            // Trả về kết quả
+            return new CauHoiDto
             {
                 MaCauHoi = cauHoi.MaCauHoi,
                 MaPhan = cauHoi.MaPhan,
@@ -336,20 +363,11 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 NgayTao = cauHoi.NgayTao,
                 NgaySua = cauHoi.NgaySua,
                 CLO = cauHoi.CLO,
-                CauTraLois = cauHoiDto.CauTraLois.Select(a => new CauTraLoiDto
-                {
-                    MaCauTraLoi = Guid.NewGuid(), // hoặc lấy từ DB nếu cần
-                    MaCauHoi = cauHoi.MaCauHoi,
-                    NoiDung = a.NoiDung,
-                    ThuTu = a.ThuTu,
-                    LaDapAn = a.LaDapAn,
-                    HoanVi = a.HoanVi
-                }).ToList(),
+                CauTraLois = cauTraLoiDtos,
                 CauHoiCons = new List<CauHoiDto>()
             };
-
-            return result;
         }
+
         public async Task<CauHoiDto> UpdateWithAnswersAsync(Guid maCauHoi, UpdateCauHoiWithAnswersDto cauHoiDto)
         {
             if (cauHoiDto == null)
