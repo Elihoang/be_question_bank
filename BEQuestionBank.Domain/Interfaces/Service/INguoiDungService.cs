@@ -17,8 +17,7 @@ namespace BEQuestionBank.Domain.Interfaces.Service
         Task<NguoiDung> GetByUsernameAsync(string tenDangNhap);
         Task<IEnumerable<NguoiDung>> GetUsersActiveAsync();     
         Task<IEnumerable<NguoiDung>> GetUsersLockedAsync();     
-        Task<bool> LockUserAsync(Guid maNguoiDung);              
-        Task<bool> UnlockUserAsync(Guid maNguoiDung);    
+        Task<bool> SetUserLockStateAsync(Guid maNguoiDung, bool isLocked);
         Task<(int SuccessCount, List<string> Errors)> ImportUsersFromExcelAsync(IFormFile file);
     }
 }

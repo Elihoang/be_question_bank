@@ -70,6 +70,7 @@ namespace BEQuestionBank.Core.Repositories
         public async Task<IEnumerable<NguoiDung>> GetAllAsync()
         {
             return await _context.NguoiDungs
+                .Include(nd => nd.Khoa)
                 .AsNoTracking()
                 .ToListAsync();
         }

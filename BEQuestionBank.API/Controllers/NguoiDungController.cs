@@ -19,6 +19,35 @@ namespace BEQuestionBank.API.Controllers
         {
             _userService = userService;
         }
+        [HttpGet]
+        [SwaggerOperation(Summary = "Lấy danh sách người dùng")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var users = await _userService.GetAllAsync();
+                if (users == null || !users.Any())
+                    return NotFound("Không tìm thấy người dùng.");
+                var userDtos = users.Select(u => new NguoiDungDto
+                {
+                    MaNguoiDung = u.MaNguoiDung,
+                    TenDangNhap = u.TenDangNhap,
+                    HoTen = u.HoTen,
+                    Email = u.Email,
+                    VaiTro = u.VaiTro,
+                    BiKhoa = u.BiKhoa,
+                    TenKhoa = u.Khoa?.TenKhoa ,
+                    NgayDangNhapCuoi = u.NgayDangNhapCuoi
+                    
+                });
+                return Ok(userDtos);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Lỗi khi lấy danh sách người dùng");
+                return StatusCode(500, "Lỗi hệ thống.");
+            }
+        }
 
         [HttpGet("{id}")]
         [SwaggerOperation(Summary = "Lấy thông tin người dùng theo ID")]
@@ -290,42 +319,7 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(500, "Lỗi hệ thống.");
             }
         }
-
-        [HttpPost("Lock/{id}")]
-        [SwaggerOperation(Summary = "Khóa người dùng theo ID")]
-        public async Task<IActionResult> LockUser(Guid id)
-        {
-            try
-            {
-                var success = await _userService.LockUserAsync(id);
-                if (!success)
-                    return NotFound("Không tìm thấy người dùng để khóa.");
-                return Ok(new { Message = "Khóa người dùng thành công" });
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi khóa người dùng với ID: {Id}", id);
-                return StatusCode(500, "Lỗi hệ thống.");
-            }
-        }
-
-        [HttpPost("Unlock/{id}")]
-        [SwaggerOperation(Summary = "Mở khóa người dùng theo ID")]
-        public async Task<IActionResult> UnlockUser(Guid id)
-        {
-            try
-            {
-                var success = await _userService.UnlockUserAsync(id);
-                if (!success)
-                    return NotFound("Không tìm thấy người dùng để mở khóa.");
-                return Ok(new { Message = "Mở khóa người dùng thành công" });
-            }
-            catch (Exception ex)
-            {
-                Serilog.Log.Error(ex, "Lỗi khi mở khóa người dùng với ID: {Id}", id);
-                return StatusCode(500, "Lỗi hệ thống.");
-            }
-        }
+        
 
         [HttpPost("Import")]
         [SwaggerOperation(Summary = "Nhập danh sách người dùng từ file Excel")]
@@ -372,6 +366,15 @@ namespace BEQuestionBank.API.Controllers
                 Serilog.Log.Error(ex, "Lỗi khi nhập người dùng từ file Excel.");
                 return StatusCode(500, new { message = "Lỗi hệ thống khi nhập người dùng", chi_tiet = ex.Message });
             }
+        }
+        [HttpPatch("{maNguoiDung}/set-lock")]
+        public async Task<IActionResult> SetUserLock(Guid maNguoiDung, [FromQuery] bool isLocked)
+        {
+            var result = await _userService.SetUserLockStateAsync(maNguoiDung, isLocked);
+            if (!result)
+                return NotFound("Không tìm thấy người dùng hoặc không thể cập nhật.");
+
+            return Ok(isLocked ? "Người dùng đã bị khóa." : "Người dùng đã được mở khóa.");
         }
 
     }

@@ -17,7 +17,6 @@ namespace BEQuestionBank.Infrastructure.Repositories
         {
             _context = context;
         }
-        
 
         public async Task<IEnumerable<YeuCauRutTrich>> GetByMaNguoiDungAsync(Guid maNguoiDung)
         {
@@ -55,5 +54,13 @@ namespace BEQuestionBank.Infrastructure.Repositories
         {
             return await _context.MonHocs.AnyAsync(m => m.MaMonHoc == maMonHoc);
         }
+        public async Task<IEnumerable<YeuCauRutTrich>> GetAllAsync()
+        {
+            return await _context.YeuCauRutTrichs
+                .Include(nd => nd.NguoiDung)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
     }
 }
