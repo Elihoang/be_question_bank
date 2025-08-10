@@ -65,7 +65,8 @@ namespace BEQuestionBank.API.Controllers
                     GhiChu = e.GhiChu,
                     NgayYeuCau = e.NgayYeuCau,
                     NgayXuLy = e.NgayXuLy,
-                    DaXuLy = e.DaXuLy
+                    DaXuLy = e.DaXuLy,
+                    TenNguoiDung = e.NguoiDung?.TenDangNhap,
                 }));
             }
             catch (Exception ex)

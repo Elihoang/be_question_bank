@@ -129,6 +129,28 @@ namespace BEQuestionBank.Core.Services
             return await _userRepository.FindAsync(u => u.BiKhoa == true);
         }
 
+        
+        public async Task<bool> SetUserLockStateAsync(Guid maNguoiDung, bool isLocked)
+        {
+            var user = await _userRepository.GetByIdAsync(maNguoiDung);
+            if (user == null)
+            {
+                return false; 
+            }
+            
+            if (user.BiKhoa == isLocked)
+            {
+                return true;
+            }
+            
+            user.BiKhoa = isLocked;
+            await _userRepository.UpdateAsync(user);
+
+            return true;
+        }
+
+    
+
         public async Task<bool> LockUserAsync(Guid maNguoiDung)
         {
             var user = await _userRepository.GetByIdAsync(maNguoiDung);
