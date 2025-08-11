@@ -149,26 +149,6 @@ namespace BEQuestionBank.Core.Services
             return true;
         }
 
-    
-
-        public async Task<bool> LockUserAsync(Guid maNguoiDung)
-        {
-            var user = await _userRepository.GetByIdAsync(maNguoiDung);
-            if (user == null) return false;
-            user.BiKhoa = true;
-            await _userRepository.UpdateAsync(user);
-            return true;
-        }
-
-        public async Task<bool> UnlockUserAsync(Guid maNguoiDung)
-        {
-            var user = await _userRepository.GetByIdAsync(maNguoiDung);
-            if (user == null) return false;
-            user.BiKhoa = false;
-            await _userRepository.UpdateAsync(user);
-            return true;
-        }
-
         public async Task<(int SuccessCount, List<string> Errors)> ImportUsersFromExcelAsync(IFormFile file)
         {
             var errors = new List<string>();

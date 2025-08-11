@@ -23,7 +23,7 @@ namespace BEQuestionBank.Core.Repositories
 
         public async Task<NguoiDung> GetByIdAsync(Guid maNguoiDung)
         {
-            return await _context.NguoiDungs
+            return await _context.NguoiDungs.Include(nd => nd.Khoa)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(nd => nd.MaNguoiDung == maNguoiDung);
         }
