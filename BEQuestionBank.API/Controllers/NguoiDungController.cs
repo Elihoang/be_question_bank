@@ -37,6 +37,7 @@ namespace BEQuestionBank.API.Controllers
                     VaiTro = u.VaiTro,
                     BiKhoa = u.BiKhoa,
                     TenKhoa = u.Khoa?.TenKhoa ,
+                    MaKhoa = u.MaKhoa,
                     NgayDangNhapCuoi = u.NgayDangNhapCuoi
                     
                 });
@@ -63,7 +64,9 @@ namespace BEQuestionBank.API.Controllers
                     HoTen = user.HoTen,
                     Email = user.Email,
                     VaiTro = user.VaiTro,
-                    BiKhoa = user.BiKhoa
+                    BiKhoa = user.BiKhoa,
+                    MaKhoa = user.MaKhoa,
+                    TenKhoa = user.Khoa?.TenKhoa,
                 };
                 return Ok(userDto);
             }
@@ -185,7 +188,8 @@ namespace BEQuestionBank.API.Controllers
                     HoTen = userDto.HoTen,
                     Email = userDto.Email,
                     VaiTro = userDto.VaiTro,
-                    BiKhoa = userDto.BiKhoa
+                    BiKhoa = userDto.BiKhoa,
+                    MaKhoa = userDto.MaKhoa,
                 };
 
                 var createdUser = await _userService.CreateAsync(user);
@@ -196,7 +200,9 @@ namespace BEQuestionBank.API.Controllers
                     HoTen = createdUser.HoTen,
                     Email = createdUser.Email,
                     VaiTro = createdUser.VaiTro,
-                    BiKhoa = createdUser.BiKhoa
+                    BiKhoa = createdUser.BiKhoa,
+                    MaKhoa = createdUser.MaKhoa,
+                    TenKhoa = createdUser.Khoa?.TenKhoa
                 };
                 return CreatedAtAction(nameof(GetUserById), new { id = createdUser.MaNguoiDung }, createdUserDto);
             }
@@ -224,7 +230,9 @@ namespace BEQuestionBank.API.Controllers
                     HoTen = userDto.HoTen,
                     Email = userDto.Email,
                     VaiTro = userDto.VaiTro,
-                    BiKhoa = userDto.BiKhoa
+                    BiKhoa = userDto.BiKhoa,
+                    MaKhoa = userDto.MaKhoa
+                    
                 };
 
                 var updatedUser = await _userService.UpdateAsync(id, user);
@@ -235,7 +243,9 @@ namespace BEQuestionBank.API.Controllers
                     HoTen = updatedUser.HoTen,
                     Email = updatedUser.Email,
                     VaiTro = updatedUser.VaiTro,
-                    BiKhoa = updatedUser.BiKhoa
+                    BiKhoa = updatedUser.BiKhoa,
+                    MaKhoa = updatedUser.MaKhoa,
+                    TenKhoa = updatedUser.Khoa?.TenKhoa,
                 };
                 return Ok(updatedUserDto);
             }
@@ -368,6 +378,7 @@ namespace BEQuestionBank.API.Controllers
             }
         }
         [HttpPatch("{maNguoiDung}/set-lock")]
+        
         public async Task<IActionResult> SetUserLock(Guid maNguoiDung, [FromQuery] bool isLocked)
         {
             var result = await _userService.SetUserLockStateAsync(maNguoiDung, isLocked);
