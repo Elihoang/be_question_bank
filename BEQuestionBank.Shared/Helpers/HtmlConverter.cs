@@ -59,26 +59,26 @@ namespace BEQuestionBank.Shared.Helpers
                     );
 
                     // Thêm đáp án
-                    if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
-                    {
-                        char dapAnLabel = 'A';
-                        foreach (var cauTraLoi in cauTraLoiList)
-                        {
-                            string noiDungDapAn = ConvertHtmlToPlainText(cauTraLoi.NoiDung ?? "N/A");
-                            Paragraph answerPara = body.AppendChild(new Paragraph());
-                            Run answerRun = answerPara.AppendChild(new Run());
-                            if (cauTraLoi.LaDapAn)
-                            {
-                                RunProperties runProps = answerRun.AppendChild(new RunProperties());
-                                runProps.Bold = new Bold();
-                            }
-                            answerRun.AppendChild(new Text($"{dapAnLabel}. {noiDungDapAn}"));
-                            answerPara.ParagraphProperties = new ParagraphProperties(
-                                new Indentation { Left = "720" } // Thụt lề 1cm
-                            );
-                            dapAnLabel++;
-                        }
-                    }
+                    // if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
+                    // {
+                    //     char dapAnLabel = 'A';
+                    //     foreach (var cauTraLoi in cauTraLoiList)
+                    //     {
+                    //         string noiDungDapAn = ConvertHtmlToPlainText(cauTraLoi.NoiDung ?? "N/A");
+                    //         Paragraph answerPara = body.AppendChild(new Paragraph());
+                    //         Run answerRun = answerPara.AppendChild(new Run());
+                    //         if (cauTraLoi.LaDapAn)
+                    //         {
+                    //             RunProperties runProps = answerRun.AppendChild(new RunProperties());
+                    //             runProps.Bold = new Bold();
+                    //         }
+                    //         answerRun.AppendChild(new Text($"{dapAnLabel}. {noiDungDapAn}"));
+                    //         answerPara.ParagraphProperties = new ParagraphProperties(
+                    //             new Indentation { Left = "720" } // Thụt lề 1cm
+                    //         );
+                    //         dapAnLabel++;
+                    //     }
+                    // }
 
                     // Thêm khoảng cách giữa các câu hỏi
                     body.AppendChild(new Paragraph());

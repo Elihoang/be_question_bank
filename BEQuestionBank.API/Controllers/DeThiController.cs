@@ -160,7 +160,6 @@ namespace BEQuestionBank.API.Controllers
                 existing.DaDuyet = updateDto.DaDuyet;
                 existing.SoCauHoi = updateDto.SoCauHoi;
                 existing.NgayCapNhap = DateTime.UtcNow;
-                existing.ChiTietDeThis = updateDto.ChiTietDeThis;
 
                 var result = await _service.UpdateWithChiTietAsync(existing);
 
@@ -385,33 +384,33 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
             }
         }
-        [HttpGet("ExportWordTemplate/{maDeThi}")]
-        [SwaggerOperation(Summary = "Xuất đề thi thành tệp Word")]
-        public async Task<IActionResult> ExportWordTemplateAsync(string maDeThi, [FromQuery] ExamTemplateParametersDto parameters = null)
-        {
-            try
-            {
-                if (!Guid.TryParse(maDeThi, out var guidId))
-                {
-                    _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
-                    return BadRequest("ID đề thi không hợp lệ.");
-                }
-
-                var fileStream = await _service.ExportWordTemplateAsync(guidId, parameters);
-                if (fileStream == null)
-                {
-                    _logger.LogWarning("Không thể tạo tệp Word cho đề thi với ID: {maDeThi}", maDeThi);
-                    return NotFound($"Không thể tạo tệp Word cho đề thi với ID: {maDeThi}");
-                }
-
-                _logger.LogInformation("Xuất đề thi thành Word thành công với ID: {maDeThi}", maDeThi);
-                return File(fileStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"DeThi_{maDeThi}.docx");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi xuất đề thi thành tệp Word với ID: {maDeThi}", maDeThi);
-                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
-            }
-        }
+    //     [HttpGet("ExportWordTemplate/{maDeThi}")]
+    //     [SwaggerOperation(Summary = "Xuất đề thi thành tệp Word")]
+    //     public async Task<IActionResult> ExportWordTemplateAsync(string maDeThi, [FromQuery] ExamTemplateParametersDto parameters = null)
+    //     {
+    //         try
+    //         {
+    //             if (!Guid.TryParse(maDeThi, out var guidId))
+    //             {
+    //                 _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
+    //                 return BadRequest("ID đề thi không hợp lệ.");
+    //             }
+    //
+    //             var fileStream = await _service.ExportWordTemplateAsync(guidId, parameters);
+    //             if (fileStream == null)
+    //             {
+    //                 _logger.LogWarning("Không thể tạo tệp Word cho đề thi với ID: {maDeThi}", maDeThi);
+    //                 return NotFound($"Không thể tạo tệp Word cho đề thi với ID: {maDeThi}");
+    //             }
+    //
+    //             _logger.LogInformation("Xuất đề thi thành Word thành công với ID: {maDeThi}", maDeThi);
+    //             return File(fileStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"DeThi_{maDeThi}.docx");
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             _logger.LogError(ex, "Lỗi khi xuất đề thi thành tệp Word với ID: {maDeThi}", maDeThi);
+    //             return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
+    //         }
+    //     }
     }
 }

@@ -118,7 +118,7 @@ namespace BEQuestionBank.Application.Services
             return _cauHoiRepository.GetByMaPhanAsync(maPhan);
         }
 
-        public Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
+        public Task<IEnumerable<CauHoiDto>> GetByMaMonHocAsync(Guid maMonHoc)
         {
             return _cauHoiRepository.GetByMaMonHocAsync(maMonHoc);
         }

@@ -21,7 +21,7 @@ namespace BEQuestionBank.Domain.Interfaces.Service
         Task<DeThiDto> ManualSelectCauHoiAsync(Guid maYeuCau, List<Guid> maCauHoiList);
         Task<DeThiDto> ChangerStatusAsync(Guid id, bool DaDuyet);
         Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi);
-        Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters);
+     //   Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters);
   
         Task<IEnumerable<CauTraLoiDto>> GetCauTraLoiByDeThiAsync(Guid maDeThi);
         Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi);

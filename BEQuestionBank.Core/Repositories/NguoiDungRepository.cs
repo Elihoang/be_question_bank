@@ -95,12 +95,19 @@ namespace BEQuestionBank.Core.Repositories
             await _context.NguoiDungs.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
-
-        public async Task UpdateAsync(NguoiDung entity)
-        {
-            _context.NguoiDungs.Update(entity);
-            await _context.SaveChangesAsync();
-        }
+        
+     override public async Task UpdateAsync(NguoiDung entity)
+         {
+          var existingUser = await _context.NguoiDungs
+              .FirstOrDefaultAsync(nd => nd.MaNguoiDung == entity.MaNguoiDung);
+          if (existingUser == null)
+          {
+              throw new ArgumentException("Không tìm thấy người dùng để cập nhật.");
+          }
+          _context.Entry(existingUser).CurrentValues.SetValues(entity);
+          _context.Entry(existingUser).Property(nd => nd.MaKhoa).IsModified = true;
+          await _context.SaveChangesAsync();
+         }
 
         public async Task DeleteAsync(NguoiDung entity)
         {
