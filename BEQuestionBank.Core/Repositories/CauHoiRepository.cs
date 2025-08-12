@@ -133,18 +133,22 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
+        public async Task<IEnumerable<CauHoiDto>> GetByMaMonHocAsync(Guid maMonHoc)
         {
             return await _context.CauHois
-                .Include(c => c.CauTraLois)
-                .Include(c => c.Phan)
-                .Include(c => c.Files)
-                .Include(c => c.CauHoiCha)
-                .Include(c => c.CauHoiCons)
                 .Where(c => c.Phan.MaMonHoc == maMonHoc && c.XoaTam == false)
                 .AsNoTracking()
+                .Select(c => new CauHoiDto
+                {
+                    MaCauHoi = c.MaCauHoi,
+                    NoiDung = c.NoiDung,
+                    CapDo = c.CapDo,
+                    XoaTam = c.XoaTam,
+                    MaPhan = c.MaPhan,
+                })
                 .ToListAsync();
         }
+
 
         public async Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi)
         {

@@ -231,11 +231,11 @@ namespace BEQuestionBank.API.Controllers
                     Email = userDto.Email,
                     VaiTro = userDto.VaiTro,
                     BiKhoa = userDto.BiKhoa,
-                    MaKhoa = userDto.MaKhoa
-                    
+                    MaKhoa = userDto.MaKhoa 
                 };
 
                 var updatedUser = await _userService.UpdateAsync(id, user);
+
                 var updatedUserDto = new NguoiDungDto
                 {
                     MaNguoiDung = updatedUser.MaNguoiDung,
@@ -245,8 +245,9 @@ namespace BEQuestionBank.API.Controllers
                     VaiTro = updatedUser.VaiTro,
                     BiKhoa = updatedUser.BiKhoa,
                     MaKhoa = updatedUser.MaKhoa,
-                    TenKhoa = updatedUser.Khoa?.TenKhoa,
+                    TenKhoa = updatedUser.Khoa?.TenKhoa
                 };
+
                 return Ok(updatedUserDto);
             }
             catch (Exception ex)
@@ -255,6 +256,7 @@ namespace BEQuestionBank.API.Controllers
                 return NotFound(new { message = ex.Message });
             }
         }
+
 
         [HttpDelete("{id}")]
         [SwaggerOperation(Summary = "Xóa người dùng")]

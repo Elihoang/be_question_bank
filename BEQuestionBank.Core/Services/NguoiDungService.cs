@@ -50,7 +50,14 @@ namespace BEQuestionBank.Core.Services
             {
                 throw new ArgumentNullException(nameof(user), "Dữ liệu người dùng không được để trống");
             }
-
+            if (user.MaKhoa.HasValue)
+            {
+                var khoa = await _khoaRepository.GetByIdAsync(user.MaKhoa.Value);
+                if (khoa == null)
+                {
+                    throw new ArgumentException($"Mã khoa {user.MaKhoa} không tồn tại.");
+                }
+            }
             var existingUser = await _userRepository.GetByIdAsync(maNguoiDung);
             existingUser.TenDangNhap = user.TenDangNhap;
             if (!string.IsNullOrEmpty(user.MatKhau))

@@ -13,7 +13,7 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
         Task<CauHoiDto> GetByIdWithAnswersAsync(Guid maCauHoi);
         Task<IEnumerable<CauHoi>> GetByCLoAsync(EnumCLO maCLo);
         Task<IEnumerable<CauHoi>> GetByMaPhanAsync(Guid maPhan);
-        Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc);
+        Task<IEnumerable<CauHoiDto>> GetByMaMonHocAsync(Guid maMonHoc);
         Task<IEnumerable<CauHoi>> GetByMaDeThiAsync(Guid maDeThi);
         Task<IEnumerable<CauHoi>> GetByMaCauHoiChasync(Guid maCHCha); 
         Task<IEnumerable<CauHoiDto>> GetAllGroupsAsync();
