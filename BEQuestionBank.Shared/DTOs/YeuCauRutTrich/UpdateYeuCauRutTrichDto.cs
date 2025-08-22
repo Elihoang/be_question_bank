@@ -15,4 +15,5 @@ public class UpdateYeuCauRutTrichDto
     public DateTime? NgayYeuCau { get; set; }
     public DateTime? NgayXuLy { get; set; }
     public bool? DaXuLy { get; set; }
+    public string? MaTran { get; set; }
 }

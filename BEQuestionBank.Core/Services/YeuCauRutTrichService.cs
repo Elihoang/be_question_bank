@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using BEQuestionBank.Domain.Enums;
+using Newtonsoft.Json;
 using Serilog;
 
 namespace BEQuestionBank.Core.Services
@@ -14,6 +16,7 @@ namespace BEQuestionBank.Core.Services
     public class YeuCauRutTrichService : IYeuCauRutTrichService
     {
         private readonly IYeuCauRutTrichRepository _repository;
+        private IYeuCauRutTrichService _yeuCauRutTrichServiceImplementation;
 
         public YeuCauRutTrichService(IYeuCauRutTrichRepository repository)
         {
@@ -50,21 +53,76 @@ namespace BEQuestionBank.Core.Services
             return entity;
         }
 
-        public async Task AddAsync(YeuCauRutTrich entity)
+        Task IService<YeuCauRutTrich>.AddAsync(YeuCauRutTrich entity)
+        {
+            return AddAsync(entity);
+        }
+
+        public async Task<YeuCauRutTrich> AddAsync(YeuCauRutTrich entity)
         {
             if (!await _repository.ExistsNguoiDungAsync(entity.MaNguoiDung))
-            {
                 throw new Exception($"Mã người dùng {entity.MaNguoiDung} không tồn tại.");
-            }
 
             if (!await _repository.ExistsMonHocAsync(entity.MaMonHoc))
-            {
                 throw new Exception($"Mã môn học {entity.MaMonHoc} không tồn tại.");
+
+            // Validate JSON trong MaTran
+            if (!string.IsNullOrWhiteSpace(entity.MaTran))
+            {
+                try
+                {
+                    var request = JsonConvert.DeserializeObject<RutTrichRequest>(entity.MaTran);
+                    if (request.TotalQuestions <= 0)
+                        throw new Exception("TotalQuestions phải lớn hơn 0.");
+
+                    if (request.CloPerPart)
+                    {
+                        if (!request.Parts.Any())
+                            throw new Exception("Parts không được rỗng khi cloPerPart = true.");
+
+                        int total = request.Parts.Sum(p => p.NumQuestions);
+                        if (total != request.TotalQuestions)
+                            throw new Exception($"Tổng numQuestions từ parts ({total}) không khớp với totalQuestions ({request.TotalQuestions}).");
+
+                        foreach (var part in request.Parts)
+                        {
+                            if (!await _repository.ExistsPhanAsync(part.MaPhan))
+                                throw new Exception($"Mã phần {part.MaPhan} không tồn tại.");
+                            if (part.NumQuestions <= 0)
+                                throw new Exception($"NumQuestions của phần {part.MaPhan} phải lớn hơn 0.");
+                            if (part.Clos.Sum(c => c.Num) != part.NumQuestions)
+                                throw new Exception($"Tổng CLO num của phần {part.MaPhan} không khớp với numQuestions.");
+                            foreach (var clo in part.Clos)
+                            {
+                                if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
+                                    throw new Exception($"CLO {clo.Clo} không hợp lệ.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!request.Clos.Any())
+                            throw new Exception("Clos không được rỗng khi cloPerPart = false.");
+                        if (request.Clos.Sum(c => c.Num) != request.TotalQuestions)
+                            throw new Exception("Tổng CLO num không khớp với totalQuestions.");
+                        foreach (var clo in request.Clos)
+                        {
+                            if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
+                                throw new Exception($"CLO {clo.Clo} không hợp lệ.");
+                        }
+                    }
+                }
+                catch (JsonException)
+                {
+                    throw new Exception("MaTran không phải JSON hợp lệ.");
+                }
             }
 
             entity.MaYeuCau = Guid.NewGuid();
             entity.NgayYeuCau = DateTime.UtcNow;
+            entity.DaXuLy = false;
             await _repository.AddAsync(entity);
+            return entity;
         }
 
         public async Task UpdateAsync(YeuCauRutTrich entity)
@@ -119,7 +177,8 @@ namespace BEQuestionBank.Core.Services
                 GhiChu = e.GhiChu,
                 NgayYeuCau = e.NgayYeuCau,
                 NgayXuLy = e.NgayXuLy,
-                DaXuLy = e.DaXuLy
+                DaXuLy = e.DaXuLy,
+                MaTran = e.MaTran
             });
         }
 
@@ -140,7 +199,8 @@ namespace BEQuestionBank.Core.Services
                 GhiChu = e.GhiChu,
                 NgayYeuCau = e.NgayYeuCau,
                 NgayXuLy = e.NgayXuLy,
-                DaXuLy = e.DaXuLy
+                DaXuLy = e.DaXuLy,
+                MaTran = e.MaTran
             });
         }
 
@@ -156,7 +216,8 @@ namespace BEQuestionBank.Core.Services
                 GhiChu = e.GhiChu,
                 NgayYeuCau = e.NgayYeuCau,
                 NgayXuLy = e.NgayXuLy,
-                DaXuLy = e.DaXuLy
+                DaXuLy = e.DaXuLy,
+                MaTran = e.MaTran
             });
         }
 
@@ -182,7 +243,8 @@ namespace BEQuestionBank.Core.Services
                 GhiChu = entity.GhiChu,
                 NgayYeuCau = entity.NgayYeuCau,
                 NgayXuLy = entity.NgayXuLy,
-                DaXuLy = entity.DaXuLy
+                DaXuLy = entity.DaXuLy,
+                MaTran = entity.MaTran
             };
         }
     }

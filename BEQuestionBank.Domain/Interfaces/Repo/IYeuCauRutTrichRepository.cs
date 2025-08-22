@@ -2,6 +2,7 @@ using BEQuestionBank.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BEQuestionBank.Domain.Enums;
 
 namespace BEQuestionBank.Domain.Interfaces.Repo
 {
@@ -12,5 +13,7 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
         Task<IEnumerable<YeuCauRutTrich>> GetChuaXuLyAsync();
         Task<bool> ExistsNguoiDungAsync(Guid maNguoiDung);
         Task<bool> ExistsMonHocAsync(Guid maMonHoc);
+        Task<bool> ExistsPhanAsync(Guid maPhan);
+        Dictionary<EnumCLO, int> Clos { get; set; }
     }
 }

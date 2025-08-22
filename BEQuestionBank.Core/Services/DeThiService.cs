@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using BEQuestionBank.Domain.Enums;
+using BEQuestionBank.Shared.DTOs;
 using BEQuestionBank.Shared.DTOs.CauHoi;
 using BEQuestionBank.Shared.DTOs.CauTraLoi;
 using BEQuestionBank.Shared.DTOs.ChiTietDeThi;
@@ -15,8 +16,10 @@ using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using OfficeOpenXml;
-using FontSize = DocumentFormat.OpenXml.Spreadsheet.FontSize;
+using Serilog;
 
 namespace BEQuestionBank.Core.Services
 {
@@ -107,130 +110,150 @@ namespace BEQuestionBank.Core.Services
             return await _deThiRepository.GetApprovedDeThisAsync();
         }
 
-        public async Task<DeThiDto> ImportMaTranFromExcelAsync(Guid maYeuCau, IFormFile excelFile)
+        public Task<DeThiDto> ImportMaTranFromExcelAsync(Guid maYeuCau, IFormFile excelFile)
         {
-            // Kiểm tra file Excel
-            if (excelFile == null || excelFile.Length == 0)
-                throw new ArgumentException("File Excel không hợp lệ hoặc trống.");
-            if (!excelFile.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Chỉ hỗ trợ file Excel định dạng .xlsx.");
+            throw new NotImplementedException();
+        }
 
-            // Lấy thông tin yêu cầu rút trích
-            var yeuCau = await _yeuCauRutTrichRepository.GetByIdAsync(maYeuCau);
-            if (yeuCau == null)
-                throw new ArgumentException($"Không tìm thấy yêu cầu rút trích với mã {maYeuCau}.");
-            var maMonHoc = yeuCau.MaMonHoc;
-            if (maMonHoc == Guid.Empty)
-                throw new ArgumentException("Yêu cầu rút trích không chứa mã môn học hợp lệ.");
+       public async Task<DeThiDto> RutTrichDeThiFromYeuCauAsync(Guid maYeuCau)
+{
+    var yeuCau = await _yeuCauRutTrichRepository.GetByIdAsync(maYeuCau);
+    if (yeuCau == null)
+        throw new Exception($"Không tìm thấy yêu cầu {maYeuCau}");
 
-            var chiTietDeThis = new List<ChiTietDeThiDto>();
-            int totalCauHoi = 0;
-            var maDeThi = Guid.NewGuid(); // Tạo MaDeThi sớm
+    if (string.IsNullOrWhiteSpace(yeuCau.MaTran))
+        throw new Exception("MaTran không được để trống.");
 
-            // Đọc file Excel
-            using (var stream = excelFile.OpenReadStream())
-            using (var package = new ExcelPackage(stream))
+    RutTrichRequest request;
+    try
+    {
+        var raw = yeuCau.MaTran;
+        if (raw.StartsWith("\"") && raw.EndsWith("\""))
+        {
+            raw = JsonConvert.DeserializeObject<string>(raw);
+        }
+
+        Serilog.Log.Information("MaTran unwrapped: {Json}", raw);
+
+        request = JsonConvert.DeserializeObject<RutTrichRequest>(raw);
+        if (request == null)
+            throw new Exception("Deserialize MaTran trả về null.");
+    }
+    catch (JsonException ex)
+    {
+        Serilog.Log.Error(ex, "Lỗi parse MaTran: {MaTran}", yeuCau.MaTran);
+        throw new Exception($"MaTran không phải JSON hợp lệ. Chi tiết: {ex.Message}");
+    }
+
+    // ánh xạ int -> int (tránh EnumCLO)
+    var cloDict = request.Clos.ToDictionary(c => c.Clo, c => c.Num);
+    var units = await _cauHoiRepository.GetQuestionUnitsByMonHocAsync(yeuCau.MaMonHoc);
+
+    Serilog.Log.Information("Tổng Units load được: {Count}", units.Count);
+
+    List<QuestionUnit> selectedUnits;
+
+    if (request.CloPerPart)
+    {
+        selectedUnits = new List<QuestionUnit>();
+        foreach (var part in request.Parts)
+        {
+            var partUnits = units.Where(u => u.MaPhan == part.MaPhan).ToList();
+            var partCloDict = part.Clos.ToDictionary(c => c.Clo, c => c.Num);
+
+            Serilog.Log.Information("Đang xử lý Part={MaPhan}, Yêu cầu CLO={Clos}",
+                part.MaPhan,
+                string.Join(", ", partCloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}")));
+
+            var partSelected = FindExactSubset(partUnits, partCloDict);
+            if (partSelected == null)
             {
-                var worksheet = package.Workbook.Worksheets[0];
-                int rowCount = worksheet.Dimension?.Rows ?? 0;
-                if (rowCount < 2)
-                    throw new ArgumentException("File Excel không chứa dữ liệu hợp lệ.");
+                var unitInfo = string.Join(" | ", partUnits.Select(u =>
+                    $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+                ));
 
-                var usedCauHoiIds = new HashSet<Guid>(); // Ngăn trùng lặp MaCauHoi
+                Serilog.Log.Warning("Không tìm thấy subset cho Part={MaPhan}. Units hiện có: {UnitInfo}", part.MaPhan, unitInfo);
 
-                for (int row = 2; row <= rowCount; row++)
-                {
-                    // Lấy giá trị CLO
-                    string cloText = worksheet.Cells[row, 1].Text?.Trim();
-                    if (string.IsNullOrWhiteSpace(cloText))
-                        continue;
-
-                    // Thử ánh xạ CLO
-                    EnumCLO clo;
-                    if (!Enum.TryParse<EnumCLO>(cloText, true, out clo))
-                    {
-                        if (int.TryParse(cloText, out var cloNumber))
-                        {
-                            if (!Enum.TryParse<EnumCLO>($"CLO{cloNumber}", true, out clo))
-                                throw new ArgumentException(
-                                    $"CLO không hợp lệ tại dòng {row}: {cloText}. Vui lòng sử dụng giá trị như '1', '2' hoặc 'CLO1', 'CLO2'.");
-                        }
-                        else
-                        {
-                            throw new ArgumentException(
-                                $"CLO không hợp lệ tại dòng {row}: {cloText}. Vui lòng sử dụng giá trị như '1', '2' hoặc 'CLO1', 'CLO2'.");
-                        }
-                    }
-
-                    // Lấy số lượng câu hỏi
-                    string soCauHoiText = worksheet.Cells[row, 2].Text?.Trim();
-                    if (string.IsNullOrWhiteSpace(soCauHoiText))
-                        continue;
-                    if (!int.TryParse(soCauHoiText, out var soCauHoi) || soCauHoi <= 0)
-                        throw new ArgumentException(
-                            $"Số câu hỏi không hợp lệ tại dòng {row}: {soCauHoiText}. Vui lòng nhập số nguyên dương.");
-
-                    // Lấy câu hỏi
-                    var cauHois = await _cauHoiRepository.GetByCLoAsync(clo);
-                    var filteredCauHois = cauHois
-                        .Where(c => c.Phan != null && c.Phan.MaMonHoc == maMonHoc && c.XoaTam == false)
-                        .Where(c => !usedCauHoiIds.Contains(c.MaCauHoi))
-                        .OrderBy(_ => Guid.NewGuid())
-                        .Take(soCauHoi)
-                        .ToList();
-
-                    if (filteredCauHois.Count < soCauHoi)
-                        throw new ArgumentException(
-                            $"Không đủ câu hỏi cho CLO {clo} tại dòng {row}. Yêu cầu {soCauHoi}, chỉ tìm thấy {filteredCauHois.Count}.");
-
-                    // Thêm MaCauHoi vào danh sách đã sử dụng
-                    foreach (var cauHoi in filteredCauHois)
-                    {
-                        usedCauHoiIds.Add(cauHoi.MaCauHoi);
-                    }
-
-                    // Thêm vào chi tiết đề thi
-                    totalCauHoi += filteredCauHois.Count;
-                    chiTietDeThis.AddRange(filteredCauHois.Select((c, index) => new ChiTietDeThiDto
-                    {
-                        MaDeThi = maDeThi, // Gán MaDeThi để khớp JSON mẫu
-                        MaCauHoi = c.MaCauHoi,
-                        MaPhan = c.MaPhan,
-                        ThuTu = chiTietDeThis.Count + index + 1
-                    }));
-                }
+                throw new Exception($"Không tìm thấy tập hợp câu hỏi thỏa mãn cho phần {part.MaPhan}.");
             }
 
-            if (totalCauHoi == 0)
-                throw new ArgumentException("Không có câu hỏi nào được rút trích từ file Excel.");
-
-            // Kiểm tra MaCauHoi trùng lặp
-            if (chiTietDeThis.GroupBy(c => c.MaCauHoi).Any(g => g.Count() > 1))
-                throw new ArgumentException("Danh sách ChiTietDeThi chứa MaCauHoi trùng lặp.");
-
-            // Tạo DeThiDto
-            var deThiDto = new DeThiDto
-            {
-                MaDeThi = maDeThi,
-                MaMonHoc = maMonHoc,
-                TenDeThi = $"Đề thi từ yêu cầu {maYeuCau}",
-                DaDuyet = false,
-                SoCauHoi = totalCauHoi,
-                NgayTao = DateTime.UtcNow,
-                NgayCapNhap = DateTime.UtcNow,
-                ChiTietDeThis = chiTietDeThis
-            };
-
-            // Lưu đề thi
-            await _deThiRepository.AddWithChiTietAsync(deThiDto);
-
-            // Cập nhật trạng thái yêu cầu
-            yeuCau.DaXuLy = true;
-            yeuCau.NgayXuLy = DateTime.UtcNow;
-            await _yeuCauRutTrichRepository.UpdateAsync(yeuCau);
-
-            return deThiDto;
+            selectedUnits.AddRange(partSelected);
         }
+    }
+    else
+    {
+        selectedUnits = FindExactSubset(units, cloDict);
+
+        if (selectedUnits == null)
+        {
+            var cloInfo = string.Join(", ", cloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}"));
+            var unitInfo = string.Join(" | ", units.Select(u =>
+                $"Unit:{u.Id}, MaPhan:{u.MaPhan}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+            ));
+
+            Serilog.Log.Warning("Không tìm thấy tập hợp câu hỏi. Yêu cầu CLO: {CloInfo}. Units hiện có: {UnitInfo}", cloInfo, unitInfo);
+
+            throw new Exception("Không tìm thấy tập hợp câu hỏi thỏa mãn yêu cầu CLO exact.");
+        }
+    }
+
+    // Kiểm tra số câu hỏi
+    int totalSelected = selectedUnits.Sum(u => u.TotalQuestions);
+    if (totalSelected != request.TotalQuestions)
+    {
+        Serilog.Log.Warning(
+            "Số lượng không khớp. Yêu cầu={Req}, Thực tế={Real}, Units={Units}",
+            request.TotalQuestions,
+            totalSelected,
+            string.Join(" | ", selectedUnits.Select(u =>
+                $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+            ))
+        );
+
+        throw new Exception("Tổng số câu hỏi rút trích không khớp với yêu cầu.");
+    }
+
+    // Tạo đề thi DTO
+    var deThiDto = new DeThiDto
+    {
+        MaDeThi = Guid.NewGuid(),
+        MaMonHoc = yeuCau.MaMonHoc,
+        TenDeThi = $"Đề thi từ yêu cầu {maYeuCau}",
+        DaDuyet = false,
+        SoCauHoi = totalSelected,
+        NgayTao = DateTime.UtcNow,
+        NgayCapNhap = DateTime.UtcNow,
+        ChiTietDeThis = new List<ChiTietDeThiDto>()
+    };
+
+    int thuTu = 1;
+    var usedCauHoiIds = new HashSet<Guid>();
+    foreach (var unit in selectedUnits)
+    {
+        foreach (var q in unit.Questions)
+        {
+            if (!usedCauHoiIds.Add(q.MaCauHoi))
+                continue;
+
+            deThiDto.ChiTietDeThis.Add(new ChiTietDeThiDto
+            {
+                MaDeThi = deThiDto.MaDeThi,
+                MaPhan = q.MaPhan,
+                MaCauHoi = q.MaCauHoi,
+                ThuTu = thuTu++
+            });
+        }
+    }
+
+    if (deThiDto.ChiTietDeThis.Count == 0)
+    {
+        Serilog.Log.Warning("Không có câu hỏi nào được rút trích từ các Units đã chọn.");
+        throw new Exception("Không có câu hỏi nào được rút trích.");
+    }
+
+    var saved = await _deThiRepository.AddWithChiTietAsync(deThiDto);
+    return saved;
+}
 
 
         public async Task<DeThiDto> ManualSelectCauHoiAsync(Guid maYeuCau, List<Guid> maCauHoiList)
@@ -301,196 +324,12 @@ namespace BEQuestionBank.Core.Services
                 NgayTao = deThi.NgayTao,
                 NgayCapNhap = deThi.NgayCapNhap
             };
-
         }
 
         public Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi)
         {
             throw new NotImplementedException();
         }
-        // public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi)
-        // {
-        //     // Lấy thông tin đề thi với chi tiết và câu trả lời
-        //     var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
-        //     if (deThiDto == null)
-        //     {
-        //         return null;
-        //     }
-        //
-        //     // Đường dẫn đến template .dotx
-        //     string templatePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "templates", "DefaultExamTemplate.dotx");
-        //     if (!System.IO.File.Exists(templatePath))
-        //     {
-        //         throw new FileNotFoundException("Tệp template không tồn tại.", templatePath);
-        //     }
-        //
-        //     // Tạo tệp Word mới dựa trên template
-        //     string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
-        //     System.IO.File.Copy(templatePath, filePath, true);
-        //
-        //     using (WordprocessingDocument doc = WordprocessingDocument.Open(filePath, true))
-        //     {
-        //         var body = doc.MainDocumentPart.Document.Body;
-        //
-        //         // Thêm tiêu đề và thông tin đề thi
-        //         var paragraph = new Paragraph(new Run(new Text($"Đề thi: {deThiDto.TenDeThi}")));
-        //
-        //         body.Append(new Paragraph(new Run(new Text("")))); 
-        //
-        //         // Thêm danh sách câu hỏi và đáp án
-        //         int cauHoiIndex = 1;
-        //         foreach (var chiTiet in deThiDto.ChiTietDeThis)
-        //         {
-        //             var cauHoi = (await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi)) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
-        //
-        //             // Câu hỏi dòng 1
-        //             paragraph = new Paragraph();
-        //             var run = new Run();
-        //             run.Append(new Text($"Câu {cauHoiIndex} ({cauHoi.CLO}): {cauHoi.NoiDung}"));
-        //             paragraph.Append(run);
-        //             body.Append(paragraph);
-        //
-        //             // Đáp án a), b), c), d)
-        //             if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
-        //             {
-        //                 char dapAnLabel = 'A';
-        //                 foreach (var cauTraLoi in cauTraLoiList)
-        //                 {
-        //                     paragraph = new Paragraph();
-        //                     run = new Run();
-        //                     run.Append(new Text($"{dapAnLabel}. {cauTraLoi.NoiDung}"));
-        //                     paragraph.Append(run);
-        //                     body.Append(paragraph);
-        //
-        //                     dapAnLabel++;
-        //                 }
-        //             }
-        //
-        //             body.Append(new Paragraph(new Run(new Text("")))); 
-        //             cauHoiIndex++;
-        //         }
-        //
-        //         doc.MainDocumentPart.Document.Save();
-        //     }
-        //
-        //     // Chuyển file thành MemoryStream để trả về
-        //     var memoryStream = new MemoryStream();
-        //     using (var stream = new FileStream(filePath, FileMode.Open))
-        //     {
-        //         await stream.CopyToAsync(memoryStream);
-        //     }
-        //     memoryStream.Position = 0;
-        //     System.IO.File.Delete(filePath); // Xóa file tạm sau khi sử dụng
-        //
-        //     return memoryStream;
-        // }
-        // public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi, ExamTemplateParametersDto parameters)
-        //      {
-        //          // Retrieve exam information with details and answers
-        //          var deThiDto = await _deThiRepository.GetDeThiWithChiTietAndCauTraLoiAsync(maDeThi);
-        //          if (deThiDto == null)
-        //          {
-        //              return null;
-        //          }
-        //
-        //          // Fallback values if parameters are not provided
-        //          string monThi = parameters.MonThi ?? deThiDto.TenDeThi ?? "N/A";
-        //         
-        //          string soTinChi = parameters.SoTinChi ?? "3";
-        //          string hocKy = parameters.HocKy ?? "N/A";
-        //          string lop = parameters.Lop ?? "N/A";
-        //          string ngayThi = parameters.NgayThi ?? DateTime.Now.ToString("dd/MM/yyyy");
-        //          string thoiGianLam = parameters.ThoiGianLam ?? "N/A";
-        //          string hinhThuc = parameters.HinhThuc ?? "N/A";
-        //          string maDe = parameters.MaDe ?? "N/A";
-        //          string taiLieu = parameters.TaiLieuCo == true ? "CÓ" : "KHÔNG";
-        //
-        //          // Create a temporary Word document
-        //          string filePath = Path.Combine(Path.GetTempPath(), $"DeThi_{maDeThi}_{DateTime.UtcNow:yyyyMMddHHmmss}.docx");
-        //          var memoryStream = new MemoryStream();
-        //          using (var doc = WordprocessingDocument.Create(memoryStream, WordprocessingDocumentType.Document, true))
-        //          {
-        //              // Initialize main document part
-        //              MainDocumentPart mainPart = doc.AddMainDocumentPart();
-        //              mainPart.Document = new Document();
-        //              Body body = new Body();
-        //              mainPart.Document.Append(body);
-        //
-        //              // Add header section
-        //              Paragraph header = new Paragraph(new Run(new Text("BM:03/QT02-P.KT")));
-        //              header.ParagraphProperties = new ParagraphProperties(
-        //                  new Justification { Val = JustificationValues.Center },
-        //                  new SpacingBetweenLines { Line = "240", LineRule = LineSpacingRuleValues.Auto }
-        //              );
-        //              body.Append(header);
-        //
-        //              // Add exam title and details
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"ĐỀ THI HỌC KỲ {hocKy} NĂM HỌC"))
-        //                  {
-        //                      RunProperties = new RunProperties(new Bold(), new FontSize { Val = 28 })
-        //                  }
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Lớp: {lop}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Môn thi: {monThi}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"SoTC: {soTinChi}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Ngày thi: {ngayThi}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Thời gian làm bài: {thoiGianLam}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Hình thức thi: {hinhThuc}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"Mã đề: {maDe}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Left }) });
-        //
-        //              // Add "SỬ DỤNG TÀI LIỆU" section
-        //              body.Append(new Paragraph(
-        //                  new Run(new Text($"SỬ DỤNG TÀI LIỆU: {taiLieu}"))
-        //              ) { ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center }) });
-        //            
-        //              foreach (var chiTiet in deThiDto.ChiTietDeThis)
-        //              {
-        //                  var cauHoi = await _cauHoiRepository.GetByIdAsync(chiTiet.MaCauHoi) ?? new CauHoi { NoiDung = "N/A", MaSoCauHoi = -1, CLO = EnumCLO.CLO1 };
-        //                  Paragraph questionPara = new Paragraph(
-        //                      new Run(new Text($"  - STT: {chiTiet.ThuTu}, Nội dung: {cauHoi.NoiDung}, MaSoCauHoi: {cauHoi.MaSoCauHoi}, CLO: {cauHoi.CLO}"))
-        //                  );
-        //                  body.Append(questionPara);
-        //
-        //                  if (deThiDto.CauTraLoiByCauHoi.TryGetValue(chiTiet.MaCauHoi, out var cauTraLoiList))
-        //                  {
-        //                      foreach (var cauTraLoi in cauTraLoiList)
-        //                      {
-        //                          body.Append(new Paragraph(
-        //                              new Run(new Text($"     - Đáp án {cauTraLoi.ThuTu}: {cauTraLoi.NoiDung} {(cauTraLoi.LaDapAn ? "(Đáp án đúng)" : "")}"))
-        //                          ));
-        //                      }
-        //                  }
-        //              }
-        //
-        //              // Save document
-        //              mainPart.Document.Save();
-        //          }
-        //
-        //          memoryStream.Position = 0;
-        //          return memoryStream;
-        //      }
 
         public async Task<MemoryStream> ExportWordTemplateAsync(Guid maDeThi,
             ExamTemplateParametersDto parameters = null)
@@ -506,20 +345,15 @@ namespace BEQuestionBank.Core.Services
 
         public async Task<IEnumerable<CauTraLoiDto>> GetCauTraLoiByDeThiAsync(Guid maDeThi)
         {
-            // Lấy thông tin đề thi với chi tiết
             var deThiDto = await _deThiRepository.GetByIdWithChiTietAsync(maDeThi);
             if (deThiDto == null || deThiDto.ChiTietDeThis == null)
             {
                 return Enumerable.Empty<CauTraLoiDto>();
             }
 
-            // Lấy danh sách MaCauHoi từ ChiTietDeThi
             var maCauHoiList = deThiDto.ChiTietDeThis.Select(ct => ct.MaCauHoi).Distinct().ToList();
-
-            // Lấy tất cả câu trả lời liên quan đến các MaCauHoi
             var cauTraLoiList = await _cauTraLoiRepository.FindAsync(ct => maCauHoiList.Contains(ct.MaCauHoi));
 
-            // Chuyển đổi sang DTO
             var cauTraLoiDtos = cauTraLoiList.Select(ct => new CauTraLoiDto
             {
                 MaCauTraLoi = ct.MaCauTraLoi,
@@ -542,11 +376,9 @@ namespace BEQuestionBank.Core.Services
                 throw new KeyNotFoundException($"Không tìm thấy đề thi với MaDeThi: {maDeThi}");
             }
 
-            // Dictionary ánh xạ MaCauHoi -> CauHoiDto
             var cauHoiDict = deThi.ChiTietDeThis
                 .ToDictionary(ct => ct.MaCauHoi, ct => ct.CauHoi);
 
-            // Danh sách mới chỉ chứa câu hỏi cha (câu hỏi không có cha)
             var chiTietChaList = new List<ChiTietDeThiDto>();
 
             foreach (var ct in deThi.ChiTietDeThis)
@@ -555,7 +387,6 @@ namespace BEQuestionBank.Core.Services
 
                 if (!cauHoi.MaCauHoiCha.HasValue)
                 {
-                    // Đây là câu hỏi cha
                     chiTietChaList.Add(ct);
 
                     if (cauHoi.CauHoiCons == null)
@@ -563,7 +394,6 @@ namespace BEQuestionBank.Core.Services
                 }
                 else
                 {
-                    // Đây là câu hỏi con, cần tìm cha để thêm vào CauHoiCons
                     if (cauHoiDict.TryGetValue(cauHoi.MaCauHoiCha.Value, out var cauHoiCha))
                     {
                         if (cauHoiCha.CauHoiCons == null)
@@ -573,7 +403,6 @@ namespace BEQuestionBank.Core.Services
                     }
                     else
                     {
-                        // Không tìm thấy câu hỏi cha, có thể thêm câu hỏi con này luôn vào danh sách cha
                         chiTietChaList.Add(ct);
                     }
                 }
@@ -584,6 +413,53 @@ namespace BEQuestionBank.Core.Services
             return deThi;
         }
 
+        private List<QuestionUnit> FindExactSubset(
+            List<QuestionUnit> units,
+            Dictionary<int, int> req,
+            int index = 0,
+            List<QuestionUnit> selected = null,
+            Dictionary<int, int> current = null)
+        {
+            selected ??= new List<QuestionUnit>();
+            current ??= req.Keys.ToDictionary(k => k, _ => 0);
+
+            if (index == units.Count)
+            {
+                if (req.All(kv => current.GetValueOrDefault(kv.Key) == kv.Value))
+                {
+                    return new List<QuestionUnit>(selected);
+                }
+                return null;
+            }
+
+            var skip = FindExactSubset(units, req, index + 1, selected, new Dictionary<int, int>(current));
+            if (skip != null) return skip;
+
+            var unit = units[index];
+            var newCurrent = new Dictionary<int, int>(current);
+
+            bool extra = false;
+            foreach (var kv in unit.CloCounts)
+            {
+                var cloInt = kv.Key; // Sử dụng trực tiếp int từ CloCounts
+                if (!req.ContainsKey(cloInt) && kv.Value > 0)
+                {
+                    extra = true;
+                    break;
+                }
+                newCurrent[cloInt] = newCurrent.GetValueOrDefault(cloInt) + kv.Value;
+                if (newCurrent[cloInt] > req.GetValueOrDefault(cloInt))
+                    return null;
+            }
+
+            if (extra) return null;
+
+            selected.Add(unit);
+            var take = FindExactSubset(units, req, index + 1, selected, newCurrent);
+            if (take != null) return take;
+            selected.RemoveAt(selected.Count - 1);
+
+            return null;
+        }
     }
-    
 }

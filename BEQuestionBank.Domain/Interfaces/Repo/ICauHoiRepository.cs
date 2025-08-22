@@ -20,5 +20,17 @@ namespace BEQuestionBank.Domain.Interfaces.Repo
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task<CauHoiDto> AddWithAnswersAsync(CreateCauHoiWithAnswersDto cauHoiDto);
         Task<CauHoiDto> UpdateWithAnswersAsync(Guid maCauHoi, UpdateCauHoiWithAnswersDto cauHoiDto);
+        Task<List<QuestionUnit>> GetQuestionUnitsByMonHocAsync(Guid maMonHoc);
+    
     }
+    public class QuestionUnit
+    {
+        public Guid Id { get; set; }
+        public Guid MaPhan { get; set; }
+        public bool IsGroup { get; set; }
+        public List<CauHoi> Questions { get; set; }
+        public Dictionary<int, int> CloCounts { get; set; } = new Dictionary<int, int>();
+        public int TotalQuestions { get; set; }
+    }
+    
 }

@@ -16,6 +16,7 @@
       <PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
       <PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
       <PackageReference Include="Nanoid" Version="3.1.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.4-beta1" />
       <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
       <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.1-dev-02317" />
       <PackageReference Include="Serilog.Sinks.Console" Version="6.0.1-dev-00953" />

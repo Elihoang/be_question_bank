@@ -412,5 +412,20 @@ namespace BEQuestionBank.API.Controllers
     //             return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
     //         }
     //     }
+    [HttpPost("rut-trich")]
+    [SwaggerOperation(Summary = "Rút trích đề thi từ yêu cầu")]
+    public async Task<IActionResult> RutTrichDeThi([FromBody] Guid maYeuCau)
+    {
+        try
+        {
+            var result = await _service.RutTrichDeThiFromYeuCauAsync(maYeuCau);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Lỗi khi rút trích đề thi.");
+            return StatusCode(500, new { message = "Lỗi hệ thống khi rút trích đề thi", chi_tiet = ex.Message });
+        }
+    }
     }
 }

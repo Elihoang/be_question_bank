@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using BEQuestionBank.Core.Configurations;
 using BEQuestionBank.Core.Repositories;
+using BEQuestionBank.Domain.Enums;
 using BEQuestionBank.Domain.Interfaces.Repo;
 
 namespace BEQuestionBank.Infrastructure.Repositories
@@ -12,10 +13,16 @@ namespace BEQuestionBank.Infrastructure.Repositories
     public class YeuCauRutTrichRepository : GenericRepository<YeuCauRutTrich> , IYeuCauRutTrichRepository
     {
         private readonly AppDbContext _context; 
+        public Dictionary<EnumCLO, int> Clos { get; set; }
 
         public YeuCauRutTrichRepository(AppDbContext context) : base(context)
         {
             _context = context;
+            Clos = new Dictionary<EnumCLO, int>(); 
+        }
+        public async Task<bool> ExistsPhanAsync(Guid maPhan)
+        {
+            return await _context.Phans.AnyAsync(p => p.MaPhan == maPhan);
         }
 
         public async Task<IEnumerable<YeuCauRutTrich>> GetByMaNguoiDungAsync(Guid maNguoiDung)
@@ -58,8 +65,20 @@ namespace BEQuestionBank.Infrastructure.Repositories
         {
             return await _context.YeuCauRutTrichs
                 .Include(nd => nd.NguoiDung)
+                .Include(y => y.MonHoc)
+                .ThenInclude(ct => ct.Khoa)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        public async Task<YeuCauRutTrich> GetByIdAsync(Guid id)
+        {
+            return await _context.YeuCauRutTrichs
+                .Include(y => y.NguoiDung)
+                .Include(y => y.MonHoc)
+                .ThenInclude(m => m.Khoa)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(y => y.MaYeuCau == id);
         }
 
     }

@@ -14,5 +14,10 @@ namespace BEQuestionBank.Shared.DTOs
         public DateTime? NgayXuLy { get; set; }
         public bool? DaXuLy { get; set; }
         public string? TenNguoiDung { get; set; }
+        public string? TenMonHoc { get; set; }
+        public string? TenKhoa { get; set; }
+        public string? MaTran { get; set; }
+
+        
     }
 }
