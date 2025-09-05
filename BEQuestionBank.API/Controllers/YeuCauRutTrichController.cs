@@ -1,3 +1,4 @@
+
 using BEQuestionBank.Domain.Interfaces.Service;
 using BEQuestionBank.Domain.Models;
 using BEQuestionBank.Shared.DTOs;
@@ -6,6 +7,8 @@ using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using BEQuestionBank.Shared.DTOs.DeThi;
+using Newtonsoft.Json;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -14,12 +17,14 @@ namespace BEQuestionBank.API.Controllers
     public class YeuCauRutTrichController : ControllerBase
     {
         private readonly IYeuCauRutTrichService _service;
+        private readonly IDeThiService _deThiService;
         private readonly ILogger<YeuCauRutTrichController> _logger;
 
-        public YeuCauRutTrichController(IYeuCauRutTrichService service , ILogger<YeuCauRutTrichController> logger)
+        public YeuCauRutTrichController(IYeuCauRutTrichService service, ILogger<YeuCauRutTrichController> logger, IDeThiService deThiService)
         {
             _logger = logger;
             _service = service;
+            _deThiService = deThiService;
         }
 
         [HttpGet("{id}")]
@@ -38,14 +43,17 @@ namespace BEQuestionBank.API.Controllers
                     GhiChu = result.GhiChu,
                     NgayYeuCau = result.NgayYeuCau,
                     NgayXuLy = result.NgayXuLy,
-                    DaXuLy = result.DaXuLy
+                    DaXuLy = result.DaXuLy,
+                    TenNguoiDung = result.NguoiDung?.TenDangNhap,
+                    TenMonHoc = result.MonHoc?.TenMonHoc,
+                    TenKhoa = result.MonHoc?.Khoa?.TenKhoa,
+                    MaTran = result.MaTran
                 });
             }
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Lỗi khi lấy yêu cầu rút trích theo mã.");
-                return StatusCode(500,
-                    new { message = "Lỗi hệ thống khi lấy yêu cầu rút trích", chi_tiet = ex.Message });
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lấy yêu cầu rút trích", chi_tiet = ex.Message });
             }
         }
 
@@ -67,13 +75,15 @@ namespace BEQuestionBank.API.Controllers
                     NgayXuLy = e.NgayXuLy,
                     DaXuLy = e.DaXuLy,
                     TenNguoiDung = e.NguoiDung?.TenDangNhap,
+                    TenMonHoc = e.MonHoc?.TenMonHoc,
+                    TenKhoa = e.MonHoc?.Khoa?.TenKhoa,
+                    MaTran = e.MaTran
                 }));
             }
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Lỗi khi lấy danh sách yêu cầu rút trích.");
-                return StatusCode(500,
-                    new { message = "Lỗi hệ thống khi lấy danh sách yêu cầu rút trích", chi_tiet = ex.Message });
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lấy danh sách yêu cầu rút trích", chi_tiet = ex.Message });
             }
         }
 
@@ -89,8 +99,7 @@ namespace BEQuestionBank.API.Controllers
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Lỗi khi lấy yêu cầu rút trích theo mã người dùng.");
-                return StatusCode(500,
-                    new { message = "Lỗi hệ thống khi lấy yêu cầu theo mã người dùng", chi_tiet = ex.Message });
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lấy yêu cầu theo mã người dùng", chi_tiet = ex.Message });
             }
         }
 
@@ -106,8 +115,7 @@ namespace BEQuestionBank.API.Controllers
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Lỗi khi lấy yêu cầu rút trích theo mã môn học.");
-                return StatusCode(500,
-                    new { message = "Lỗi hệ thống khi lấy yêu cầu theo mã môn học", chi_tiet = ex.Message });
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lấy yêu cầu theo mã môn học", chi_tiet = ex.Message });
             }
         }
 
@@ -123,51 +131,11 @@ namespace BEQuestionBank.API.Controllers
             catch (Exception ex)
             {
                 Serilog.Log.Error(ex, "Lỗi khi lấy danh sách yêu cầu rút trích chưa xử lý.");
-                return StatusCode(500,
-                    new { message = "Lỗi hệ thống khi lấy danh sách yêu cầu chưa xử lý", chi_tiet = ex.Message });
+                return StatusCode(500, new { message = "Lỗi hệ thống khi lấy danh sách yêu cầu chưa xử lý", chi_tiet = ex.Message });
             }
         }
 
-        [HttpPost]
-        [SwaggerOperation(Summary = "Tạo yêu cầu rút trích mới")]
-        public async Task<IActionResult> CreateAsync([FromBody] CreateYeuCauRutTrichDto YeuCauRutTrichDto)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(new
-                    {
-                        message = "Dữ liệu không hợp lệ.",
-                        errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
-                    });
-                }
-
-                var entity = new YeuCauRutTrich
-                {
-                    MaNguoiDung = YeuCauRutTrichDto.MaNguoiDung,
-                    MaMonHoc = YeuCauRutTrichDto.MaMonHoc,
-                    NoiDungRutTrich = YeuCauRutTrichDto.NoiDungRutTrich,
-                    GhiChu = YeuCauRutTrichDto.GhiChu,
-                    NgayYeuCau = DateTime.UtcNow,
-                    NgayXuLy = null,
-                    DaXuLy = false
-                };
-
-                await _service.AddAsync(entity);
-                _logger.LogInformation("Thêm mới câu hỏi thành công với MaYeuCau: {MaYeuCau}", entity.MaYeuCau);
-                return StatusCode(StatusCodes.Status201Created,
-                    new { Message = "Thêm mới câu hỏi thành công", Data = entity });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi thêm mới câu hỏi.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi thêm mới câu hỏi.");
-            }
-        }
-    
-
-    [HttpPatch("{id}")]
+        [HttpPatch("{id}")]
         [SwaggerOperation(Summary = "Cập nhật yêu cầu rút trích")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateYeuCauRutTrichDto dto)
         {
@@ -213,6 +181,7 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(500, new { message = "Lỗi hệ thống khi xóa yêu cầu rút trích", chi_tiet = ex.Message });
             }
         }
+
         [HttpPatch("{id}/status")]
         [SwaggerOperation(Summary = "Thay đổi trạng thái xử lý của yêu cầu rút trích")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] bool daXuLy)
@@ -226,6 +195,89 @@ namespace BEQuestionBank.API.Controllers
             {
                 Serilog.Log.Error(ex, "Lỗi khi thay đổi trạng thái yêu cầu rút trích.");
                 return StatusCode(500, new { message = "Lỗi hệ thống khi thay đổi trạng thái yêu cầu rút trích", chi_tiet = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Tạo yêu cầu rút trích mới và tự động rút trích đề thi nếu có ma trận JSON.
+        /// </summary>
+        /// <param name="requestDto">Yêu cầu rút trích với MaTran dạng JSON.</param>
+        /// <returns>Yêu cầu vừa tạo và đề thi (nếu được rút trích).</returns>
+        [HttpPost]
+        public async Task<ActionResult<object>> CreateYeuCau([FromBody] YeuCauRutTrichDto requestDto)
+        {
+            if (requestDto == null)
+                return BadRequest("Dữ liệu yêu cầu không hợp lệ.");
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Dữ liệu không hợp lệ.",
+                    errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
+                });
+            }
+
+            try
+            {
+                var entity = new YeuCauRutTrich
+                {
+                    MaNguoiDung = requestDto.MaNguoiDung,
+                    MaMonHoc = requestDto.MaMonHoc,
+                    NoiDungRutTrich = requestDto.NoiDungRutTrich,
+                    GhiChu = requestDto.GhiChu,
+                    NgayYeuCau = DateTime.UtcNow,
+                    DaXuLy = false,
+                    MaTran = requestDto.MaTran
+                };
+
+                var result = await _service.AddAsync(entity);
+
+                DeThiDto deThi = null;
+                if (!string.IsNullOrWhiteSpace(result.MaTran))
+                {
+                    try
+                    {
+                        deThi = await _deThiService.RutTrichDeThiFromYeuCauAsync(result.MaYeuCau);
+                        // Cập nhật trạng thái DaXuLy và NgayXuLy nếu rút trích thành công
+                        result.DaXuLy = true;
+                        result.NgayXuLy = DateTime.UtcNow;
+                        await _service.UpdateAsync(result);
+                    }
+                    catch (Exception ex)
+                    {
+                        Serilog.Log.Error(ex, "Lỗi khi rút trích đề thi cho yêu cầu {MaYeuCau}", result.MaYeuCau);
+                        return StatusCode(500, new
+                        {
+                            message = "Tạo yêu cầu thành công nhưng lỗi khi rút trích đề thi",
+                            yeuCau = result,
+                            chi_tiet = ex.Message
+                        });
+                    }
+                }
+
+                var dto = new YeuCauRutTrichDto
+                {
+                    MaYeuCau = result.MaYeuCau,
+                    MaNguoiDung = result.MaNguoiDung,
+                    MaMonHoc = result.MaMonHoc,
+                    NoiDungRutTrich = result.NoiDungRutTrich,
+                    GhiChu = result.GhiChu,
+                    NgayYeuCau = result.NgayYeuCau,
+                    NgayXuLy = result.NgayXuLy,
+                    DaXuLy = result.DaXuLy,
+                    TenNguoiDung = result.NguoiDung?.TenDangNhap,
+                    TenMonHoc = result.MonHoc?.TenMonHoc,
+                    TenKhoa = result.MonHoc?.Khoa?.TenKhoa,
+                    MaTran = result.MaTran
+                };
+
+                return Ok(new { YeuCauRutTrich = dto, DeThi = deThi });
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Lỗi khi tạo yêu cầu rút trích.");
+                return StatusCode(500, new { message = "Lỗi hệ thống khi tạo yêu cầu rút trích", chi_tiet = ex.Message });
             }
         }
     }

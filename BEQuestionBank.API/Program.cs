@@ -5,10 +5,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers(); // ✅ Cần có để Swagger hiển thị API
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        // Xử lý vòng lặp trong EF navigation properties
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+
+        // Đổi về camelCase cho JSON
+        options.SerializerSettings.ContractResolver =
+            new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver();
+    });
+
 builder.Services.AddEndpointsApiExplorer(); // ✅ Cho minimal APIs
 builder.Services.AddSwaggerGen(); // ✅ Cấu hình Swagger
 
@@ -53,6 +64,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddSingleton<string>(provider => "wwwroot/uploads");
+
 // Cấu hình Log
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -103,7 +115,6 @@ app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers(); 

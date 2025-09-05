@@ -25,5 +25,6 @@ namespace BEQuestionBank.Domain.Interfaces.Service
   
         Task<IEnumerable<CauTraLoiDto>> GetCauTraLoiByDeThiAsync(Guid maDeThi);
         Task<DeThiWithChiTietAndCauTraLoiDto> GetDeThiWithChiTietAndCauTraLoiAsync(Guid maDeThi);
+        Task<DeThiDto> RutTrichDeThiFromYeuCauAsync(Guid maYeuCau);
     }
 }

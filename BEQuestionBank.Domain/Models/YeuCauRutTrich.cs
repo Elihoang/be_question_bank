@@ -17,6 +17,7 @@ public class YeuCauRutTrich
     public DateTime? NgayYeuCau { get; set; }
     public DateTime? NgayXuLy { get; set; }
     public bool? DaXuLy { get; set; }
+    public string? MaTran { get; set; }
     
     public virtual MonHoc? MonHoc { get; set; }
     public virtual NguoiDung? NguoiDung { get; set; }

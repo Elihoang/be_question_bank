@@ -10,4 +10,5 @@ public class CreateYeuCauRutTrichDto
     public Guid MaMonHoc { get; set; }
     public string? NoiDungRutTrich { get; set; }
     public string? GhiChu { get; set; }
+    public string? MaTran { get; set; }
 }
