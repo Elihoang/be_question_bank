@@ -49,7 +49,7 @@ namespace BEQuestionBank.API.Controllers
             return await _service.GetAllAsync();
         }
 
-        [HttpGet("cau-hoi/{maCauHoi}")]
+        [HttpGet("CauHoi/{maCauHoi}")]
         [SwaggerOperation("Lấy danh sách Câu Trả Lời theo Mã Câu Hỏi")]
         public async Task<IEnumerable<CauTraLoi>> GetByMaKhoaAsync(string maCauHoi)
         {

@@ -26,6 +26,8 @@ public class PartRequest
 
     [JsonProperty("clos")]
     public List<CloRequest> Clos { get; set; } = new();
+    
+    public int? Groups { get; set; }
 }
 
 public class CloRequest

@@ -29,14 +29,16 @@ namespace BEQuestionBank.Core.Services
         private readonly IYeuCauRutTrichRepository _yeuCauRutTrichRepository;
         private readonly ICauHoiRepository _cauHoiRepository;
         private readonly ICauTraLoiRepository _cauTraLoiRepository;
+        private readonly IPhanRepository _phanRepository;
 
         public DeThiService(IDeThiRepository deThiRepository, IYeuCauRutTrichRepository yeuCauRutTrichRepository,
-            ICauHoiRepository cauHoiRepository, ICauTraLoiRepository cauTraLoiRepository)
+            ICauHoiRepository cauHoiRepository, ICauTraLoiRepository cauTraLoiRepository , IPhanRepository phanRepository)
         {
             _deThiRepository = deThiRepository;
             _yeuCauRutTrichRepository = yeuCauRutTrichRepository;
             _cauHoiRepository = cauHoiRepository;
             _cauTraLoiRepository = cauTraLoiRepository;
+            _phanRepository = phanRepository;
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         }
 
@@ -114,195 +116,7 @@ namespace BEQuestionBank.Core.Services
         {
             throw new NotImplementedException();
         }
-
-       public async Task<DeThiDto> RutTrichDeThiFromYeuCauAsync(Guid maYeuCau)
-{
-    var yeuCau = await _yeuCauRutTrichRepository.GetByIdAsync(maYeuCau);
-    if (yeuCau == null)
-        throw new Exception($"Không tìm thấy yêu cầu {maYeuCau}");
-
-    if (string.IsNullOrWhiteSpace(yeuCau.MaTran))
-        throw new Exception("MaTran không được để trống.");
-
-    RutTrichRequest request;
-    try
-    {
-        var raw = yeuCau.MaTran;
-        if (raw.StartsWith("\"") && raw.EndsWith("\""))
-        {
-            raw = JsonConvert.DeserializeObject<string>(raw);
-        }
-
-        Serilog.Log.Information("MaTran unwrapped: {Json}", raw);
-
-        request = JsonConvert.DeserializeObject<RutTrichRequest>(raw);
-        if (request == null)
-            throw new Exception("Deserialize MaTran trả về null.");
-    }
-    catch (JsonException ex)
-    {
-        Serilog.Log.Error(ex, "Lỗi parse MaTran: {MaTran}", yeuCau.MaTran);
-        throw new Exception($"MaTran không phải JSON hợp lệ. Chi tiết: {ex.Message}");
-    }
-
-    // ánh xạ int -> int (tránh EnumCLO)
-    var cloDict = request.Clos.ToDictionary(c => c.Clo, c => c.Num);
-    var units = await _cauHoiRepository.GetQuestionUnitsByMonHocAsync(yeuCau.MaMonHoc);
-
-    Serilog.Log.Information("Tổng Units load được: {Count}", units.Count);
-
-    List<QuestionUnit> selectedUnits;
-
-    if (request.CloPerPart)
-    {
-        selectedUnits = new List<QuestionUnit>();
-        foreach (var part in request.Parts)
-        {
-            var partUnits = units.Where(u => u.MaPhan == part.MaPhan).ToList();
-            var partCloDict = part.Clos.ToDictionary(c => c.Clo, c => c.Num);
-
-            Serilog.Log.Information("Đang xử lý Part={MaPhan}, Yêu cầu CLO={Clos}",
-                part.MaPhan,
-                string.Join(", ", partCloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}")));
-
-            var partSelected = FindExactSubset(partUnits, partCloDict);
-            if (partSelected == null)
-            {
-                var unitInfo = string.Join(" | ", partUnits.Select(u =>
-                    $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
-                ));
-
-                Serilog.Log.Warning("Không tìm thấy subset cho Part={MaPhan}. Units hiện có: {UnitInfo}", part.MaPhan, unitInfo);
-
-                throw new Exception($"Không tìm thấy tập hợp câu hỏi thỏa mãn cho phần {part.MaPhan}.");
-            }
-
-            selectedUnits.AddRange(partSelected);
-        }
-    }
-    else
-    {
-        selectedUnits = FindExactSubset(units, cloDict);
-
-        if (selectedUnits == null)
-        {
-            var cloInfo = string.Join(", ", cloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}"));
-            var unitInfo = string.Join(" | ", units.Select(u =>
-                $"Unit:{u.Id}, MaPhan:{u.MaPhan}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
-            ));
-
-            Serilog.Log.Warning("Không tìm thấy tập hợp câu hỏi. Yêu cầu CLO: {CloInfo}. Units hiện có: {UnitInfo}", cloInfo, unitInfo);
-
-            throw new Exception("Không tìm thấy tập hợp câu hỏi thỏa mãn yêu cầu CLO exact.");
-        }
-    }
-
-    // Kiểm tra số câu hỏi
-    int totalSelected = selectedUnits.Sum(u => u.TotalQuestions);
-    if (totalSelected != request.TotalQuestions)
-    {
-        Serilog.Log.Warning(
-            "Số lượng không khớp. Yêu cầu={Req}, Thực tế={Real}, Units={Units}",
-            request.TotalQuestions,
-            totalSelected,
-            string.Join(" | ", selectedUnits.Select(u =>
-                $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
-            ))
-        );
-
-        throw new Exception("Tổng số câu hỏi rút trích không khớp với yêu cầu.");
-    }
-
-    // Tạo đề thi DTO
-    var deThiDto = new DeThiDto
-    {
-        MaDeThi = Guid.NewGuid(),
-        MaMonHoc = yeuCau.MaMonHoc,
-        TenDeThi = $"Đề thi từ yêu cầu {maYeuCau}",
-        DaDuyet = false,
-        SoCauHoi = totalSelected,
-        NgayTao = DateTime.UtcNow,
-        NgayCapNhap = DateTime.UtcNow,
-        ChiTietDeThis = new List<ChiTietDeThiDto>()
-    };
-
-    int thuTu = 1;
-    var usedCauHoiIds = new HashSet<Guid>();
-    foreach (var unit in selectedUnits)
-    {
-        foreach (var q in unit.Questions)
-        {
-            if (!usedCauHoiIds.Add(q.MaCauHoi))
-                continue;
-
-            deThiDto.ChiTietDeThis.Add(new ChiTietDeThiDto
-            {
-                MaDeThi = deThiDto.MaDeThi,
-                MaPhan = q.MaPhan,
-                MaCauHoi = q.MaCauHoi,
-                ThuTu = thuTu++
-            });
-        }
-    }
-
-    if (deThiDto.ChiTietDeThis.Count == 0)
-    {
-        Serilog.Log.Warning("Không có câu hỏi nào được rút trích từ các Units đã chọn.");
-        throw new Exception("Không có câu hỏi nào được rút trích.");
-    }
-
-    var saved = await _deThiRepository.AddWithChiTietAsync(deThiDto);
-    return saved;
-}
-
-
-        public async Task<DeThiDto> ManualSelectCauHoiAsync(Guid maYeuCau, List<Guid> maCauHoiList)
-        {
-            if (maCauHoiList == null || !maCauHoiList.Any())
-                throw new Exception("Danh sách câu hỏi không hợp lệ hoặc trống.");
-
-            var yeuCau = await _yeuCauRutTrichRepository.GetByIdAsync(maYeuCau);
-            if (yeuCau == null)
-                throw new Exception($"Không tìm thấy yêu cầu rút trích với mã {maYeuCau}.");
-
-            var maMonHoc = yeuCau.MaMonHoc;
-            var chiTietDeThis = new List<ChiTietDeThiDto>();
-
-            foreach (var maCauHoi in maCauHoiList)
-            {
-                var cauHoi = await _cauHoiRepository.GetByIdAsync(maCauHoi);
-                if (cauHoi == null)
-                    throw new Exception($"Câu hỏi với mã {maCauHoi} không hợp lệ hoặc đã bị xóa tạm.");
-
-                chiTietDeThis.Add(new ChiTietDeThiDto
-                {
-                    MaCauHoi = cauHoi.MaCauHoi,
-                    MaPhan = cauHoi.MaPhan,
-                    ThuTu = chiTietDeThis.Count + 1
-                });
-            }
-
-            var deThiDto = new DeThiDto
-            {
-                MaDeThi = Guid.NewGuid(),
-                MaMonHoc = maMonHoc,
-                TenDeThi = $"Đề thi từ yêu cầu {maYeuCau} (thủ công)",
-                DaDuyet = false,
-                SoCauHoi = maCauHoiList.Count,
-                NgayTao = DateTime.UtcNow,
-                NgayCapNhap = DateTime.UtcNow,
-                ChiTietDeThis = chiTietDeThis
-            };
-
-            await AddWithChiTietAsync(deThiDto);
-
-            yeuCau.DaXuLy = true;
-            yeuCau.NgayXuLy = DateTime.UtcNow;
-            await _yeuCauRutTrichRepository.UpdateAsync(yeuCau);
-
-            return deThiDto;
-        }
-
+        
         public async Task<DeThiDto> ChangerStatusAsync(Guid id, bool DaDuyet)
         {
             var deThi = await _deThiRepository.GetByIdAsync(id);
@@ -412,6 +226,204 @@ namespace BEQuestionBank.Core.Services
 
             return deThi;
         }
+       public async Task<DeThiDto> RutTrichDeThiFromYeuCauAsync(Guid maYeuCau)
+        {
+            var yeuCau = await _yeuCauRutTrichRepository.GetByIdAsync(maYeuCau);
+            if (yeuCau == null)
+                throw new Exception($"Không tìm thấy yêu cầu {maYeuCau}");
+
+            if (string.IsNullOrWhiteSpace(yeuCau.MaTran))
+                throw new Exception("MaTran không được để trống.");
+
+            var checkResult = await CheckExtractionAsync(yeuCau.MaMonHoc, yeuCau.MaTran);
+            if (!checkResult.CanExtract)
+                throw new Exception(checkResult.Message);
+
+            var request = ParseMaTranRequest(yeuCau.MaTran);
+            var units = await _cauHoiRepository.GetQuestionUnitsByMonHocAsync(yeuCau.MaMonHoc);
+            var selectedUnits = SelectExactSubsetUnits(units, request);
+
+            var deThiDto = new DeThiDto
+            {
+                MaDeThi = Guid.NewGuid(),
+                MaMonHoc = yeuCau.MaMonHoc,
+                TenDeThi = $"Đề thi từ yêu cầu {maYeuCau}",
+                DaDuyet = false,
+                SoCauHoi = checkResult.TotalSuccess,
+                NgayTao = DateTime.UtcNow,
+                NgayCapNhap = DateTime.UtcNow,
+                ChiTietDeThis = new List<ChiTietDeThiDto>()
+            };
+
+            int thuTu = 1;
+            var usedCauHoiIds = new HashSet<Guid>();
+            foreach (var unit in selectedUnits)
+            {
+                foreach (var q in unit.Questions)
+                {
+                    if (!usedCauHoiIds.Add(q.MaCauHoi)) continue;
+
+                    deThiDto.ChiTietDeThis.Add(new ChiTietDeThiDto
+                    {
+                        MaDeThi = deThiDto.MaDeThi,
+                        MaPhan = q.MaPhan,
+                        MaCauHoi = q.MaCauHoi,
+                        ThuTu = thuTu++
+                    });
+                }
+            }
+
+            if (deThiDto.ChiTietDeThis.Count == 0)
+                throw new Exception("Không có câu hỏi nào được rút trích.");
+
+            var saved = await _deThiRepository.AddWithChiTietAsync(deThiDto);
+            return saved;
+        }
+        
+        
+        /// <summary>
+        /// Hàm tách: Parse MaTran từ string JSON.
+        /// </summary>
+        private RutTrichRequest ParseMaTranRequest(string maTran)
+        {
+            try
+            {
+                var raw = maTran;
+                if (raw.StartsWith("\"") && raw.EndsWith("\""))
+                {
+                    raw = JsonConvert.DeserializeObject<string>(raw);
+                }
+
+                var request = JsonConvert.DeserializeObject<RutTrichRequest>(raw);
+                if (request == null)
+                    throw new Exception("Deserialize MaTran trả về null.");
+
+                return request;
+            }
+            catch (JsonException ex)
+            {
+                Serilog.Log.Error(ex, "Lỗi parse MaTran: {MaTran}", maTran);
+                throw new Exception($"MaTran không phải JSON hợp lệ. Chi tiết: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Hàm tách: Chọn subset units phù hợp với yêu cầu CLO.
+        /// </summary>
+       private List<QuestionUnit> SelectExactSubsetUnits(List<QuestionUnit> units, RutTrichRequest request)
+        {
+            var cloDict = request.Clos.ToDictionary(c => c.Clo, c => c.Num);
+
+            List<QuestionUnit> selectedUnits;
+
+            if (request.CloPerPart)
+            {
+                selectedUnits = new List<QuestionUnit>();
+                foreach (var part in request.Parts)
+                {
+                    var partUnits = units.Where(u => u.MaPhan == part.MaPhan).ToList();
+                    var partCloDict = part.Clos.ToDictionary(c => c.Clo, c => c.Num);
+
+                    Serilog.Log.Information("Đang xử lý Part={MaPhan}, Yêu cầu CLO={Clos}",
+                        part.MaPhan,
+                        string.Join(", ", partCloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}")));
+
+                    var partSelected = FindExactSubset(partUnits, partCloDict);
+                    if (partSelected == null)
+                    {
+                        var unitInfo = string.Join(" | ", partUnits.Select(u =>
+                            $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+                        ));
+
+                        Serilog.Log.Warning("Không tìm thấy subset cho Part={MaPhan}. Units hiện có: {UnitInfo}", part.MaPhan, unitInfo);
+
+                        throw new Exception($"Không tìm thấy tập hợp câu hỏi thỏa mãn cho phần {part.MaPhan}.");
+                    }
+
+                    selectedUnits.AddRange(partSelected);
+                }
+            }
+            else
+            {
+                selectedUnits = FindExactSubset(units, cloDict);
+
+                if (selectedUnits == null)
+                {
+                    var cloInfo = string.Join(", ", cloDict.Select(kvp => $"CLO{kvp.Key}={kvp.Value}"));
+                    var unitInfo = string.Join(" | ", units.Select(u =>
+                        $"Unit:{u.Id}, MaPhan:{u.MaPhan}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+                    ));
+
+                    Serilog.Log.Warning("Không tìm thấy tập hợp câu hỏi. Yêu cầu CLO: {CloInfo}. Units hiện có: {UnitInfo}", cloInfo, unitInfo);
+
+                    throw new Exception("Không tìm thấy tập hợp câu hỏi thỏa mãn yêu cầu CLO exact.");
+                }
+            }
+
+            return selectedUnits;
+        }
+        /// <summary>
+        /// Hàm tách: Tạo và lưu đề thi từ selectedUnits.
+        /// </summary>
+        private async Task<DeThiDto> CreateAndSaveDeThiFromSelectedUnits(YeuCauRutTrich yeuCau, RutTrichRequest request, List<QuestionUnit> selectedUnits)
+        {
+            // Kiểm tra số câu hỏi
+            int totalSelected = selectedUnits.Sum(u => u.TotalQuestions);
+            if (totalSelected != request.TotalQuestions)
+            {
+                Serilog.Log.Warning(
+                    "Số lượng không khớp. Yêu cầu={Req}, Thực tế={Real}, Units={Units}",
+                    request.TotalQuestions,
+                    totalSelected,
+                    string.Join(" | ", selectedUnits.Select(u =>
+                        $"Unit:{u.Id}, CLOs:[{string.Join(",", u.CloCounts.Select(c => $"{c.Key}:{c.Value}"))}], Total={u.TotalQuestions}"
+                    ))
+                );
+
+                throw new Exception("Tổng số câu hỏi rút trích không khớp với yêu cầu.");
+            }
+
+            // Tạo đề thi DTO
+            var deThiDto = new DeThiDto
+            {
+                MaDeThi = Guid.NewGuid(),
+                MaMonHoc = yeuCau.MaMonHoc,
+                TenDeThi = $"Đề thi từ yêu cầu {yeuCau.MaYeuCau}",
+                DaDuyet = false,
+                SoCauHoi = totalSelected,
+                NgayTao = DateTime.UtcNow,
+                NgayCapNhap = DateTime.UtcNow,
+                ChiTietDeThis = new List<ChiTietDeThiDto>()
+            };
+
+            int thuTu = 1;
+            var usedCauHoiIds = new HashSet<Guid>();
+            foreach (var unit in selectedUnits)
+            {
+                foreach (var q in unit.Questions)
+                {
+                    if (!usedCauHoiIds.Add(q.MaCauHoi))
+                        continue;
+
+                    deThiDto.ChiTietDeThis.Add(new ChiTietDeThiDto
+                    {
+                        MaDeThi = deThiDto.MaDeThi,
+                        MaPhan = q.MaPhan,
+                        MaCauHoi = q.MaCauHoi,
+                        ThuTu = thuTu++
+                    });
+                }
+            }
+
+            if (deThiDto.ChiTietDeThis.Count == 0)
+            {
+                Serilog.Log.Warning("Không có câu hỏi nào được rút trích từ các Units đã chọn.");
+                throw new Exception("Không có câu hỏi nào được rút trích.");
+            }
+
+            var saved = await _deThiRepository.AddWithChiTietAsync(deThiDto);
+            return saved;
+        }
 
         private List<QuestionUnit> FindExactSubset(
             List<QuestionUnit> units,
@@ -441,7 +453,7 @@ namespace BEQuestionBank.Core.Services
             bool extra = false;
             foreach (var kv in unit.CloCounts)
             {
-                var cloInt = kv.Key; // Sử dụng trực tiếp int từ CloCounts
+                var cloInt = kv.Key; 
                 if (!req.ContainsKey(cloInt) && kv.Value > 0)
                 {
                     extra = true;
@@ -460,6 +472,129 @@ namespace BEQuestionBank.Core.Services
             selected.RemoveAt(selected.Count - 1);
 
             return null;
+        }
+        public async Task<ExtractionCheckResultDto> CheckExtractionAsync(Guid maMonHoc, string maTran)
+        {
+            if (string.IsNullOrWhiteSpace(maTran))
+                throw new Exception("MaTran không được để trống.");
+
+            var request = ParseMaTranRequest(maTran);
+
+            var units = await _cauHoiRepository.GetQuestionUnitsByMonHocAsync(maMonHoc);
+            Serilog.Log.Information("Tổng Units load được cho check: {Count}", units.Count);
+
+            var checkResult = new ExtractionCheckResultDto
+            {
+                Message = "OK",
+                CanExtract = true,
+                CloExtracted = new Dictionary<int, int>()
+            };
+
+            List<QuestionUnit> selectedUnits = null;
+            try
+            {
+                selectedUnits = SelectExactSubsetUnits(units, request);
+            }
+            catch (Exception ex)
+            {
+                checkResult.Message = ex.Message;
+                checkResult.CanExtract = false;
+                return checkResult;
+            }
+
+            // Tính toán số lượng câu hỏi đơn và nhóm từ selectedUnits
+            checkResult.SingleQuestions = selectedUnits?.Count(u => !u.IsGroup) ?? 0;
+            checkResult.GroupQuestions = selectedUnits?.Count(u => u.IsGroup) ?? 0;
+
+            int totalSelected = selectedUnits?.Sum(u => u.TotalQuestions) ?? 0;
+            checkResult.TotalSuccess = totalSelected;
+            checkResult.TotalFailure = request.TotalQuestions - totalSelected;
+
+            foreach (var unit in selectedUnits ?? new List<QuestionUnit>())
+            {
+                foreach (var kv in unit.CloCounts)
+                {
+                    if (!checkResult.CloExtracted.ContainsKey(kv.Key))
+                        checkResult.CloExtracted[kv.Key] = 0;
+                    checkResult.CloExtracted[kv.Key] += kv.Value;
+                }
+            }
+
+            if (totalSelected != request.TotalQuestions)
+            {
+                checkResult.Message = "Tổng số câu hỏi lấy được không khớp yêu cầu.";
+                checkResult.CanExtract = false;
+            }
+
+            return checkResult;
+        }
+
+        public async Task<MonHocStatsDto> GetMonHocStatsAsync(Guid maMonHoc)
+        {
+            var phans = await _phanRepository.GetByMaMonHocAsync(maMonHoc);
+            var units = await _cauHoiRepository.GetQuestionUnitsByMonHocAsync(maMonHoc);
+
+            var stats = new MonHocStatsDto
+            {
+                CloPerPart = phans.Any(),
+                TotalQuestions = units.Sum(u => u.TotalQuestions),
+                SingleQuestions = units.Count(u => !u.IsGroup),
+                GroupQuestions = units.Count(u => u.IsGroup),
+            };
+
+            // ✅ Sử dụng key dạng số "1".."5"
+            stats.CloTotals = new Dictionary<string, int>
+            {
+                { "1", 0 },
+                { "2", 0 },
+                { "3", 0 },
+                { "4", 0 },
+                { "5", 0 }
+            };
+
+            foreach (var unit in units)
+            {
+                foreach (var kv in unit.CloCounts) // kv.Key = int CLO, kv.Value = số câu
+                {
+                    var key = kv.Key.ToString(); // "1".."5"
+                    if (stats.CloTotals.ContainsKey(key))
+                        stats.CloTotals[key] += kv.Value;
+                }
+            }
+
+            stats.Matrix = phans.Select(p =>
+            {
+                var phanUnits = units.Where(u => u.MaPhan == p.MaPhan).ToList();
+
+                return new MatrixDto
+                {
+                    Chapter = p.TenPhan,
+                    MaPhan = p.MaPhan,
+                    CLO1 = phanUnits.Sum(u => u.CloCounts.GetValueOrDefault(1, 0)),
+                    CLO2 = phanUnits.Sum(u => u.CloCounts.GetValueOrDefault(2, 0)),
+                    CLO3 = phanUnits.Sum(u => u.CloCounts.GetValueOrDefault(3, 0)),
+                    CLO4 = phanUnits.Sum(u => u.CloCounts.GetValueOrDefault(4, 0)),
+                    CLO5 = phanUnits.Sum(u => u.CloCounts.GetValueOrDefault(5, 0)),
+                    Total = phanUnits.Sum(u => u.TotalQuestions)
+                };
+            }).ToList();
+
+            if (!stats.CloPerPart)
+            {
+                stats.Matrix.Add(new MatrixDto
+                {
+                    Chapter = "Default",
+                    Total = stats.TotalQuestions
+                });
+            }
+
+            return stats;
+        }
+
+
+        public Task<MonHocStatsDto> UpdateMatrixAsync(Guid maMonHoc, List<MatrixUpdateDto> updates)
+        {
+            throw new NotImplementedException();
         }
     }
 }
