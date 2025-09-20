@@ -225,10 +225,10 @@ namespace BEQuestionBank.Core.Repositories
         .Include(dt => dt.ChiTietDeThis)
             .ThenInclude(ct => ct.CauHoi)
                 .ThenInclude(ch => ch.CauTraLois)
-        .Include(dt => dt.ChiTietDeThis) // Thêm Include cho CauHoiCons
+        .Include(dt => dt.ChiTietDeThis)
             .ThenInclude(ct => ct.CauHoi)
-                .ThenInclude(ch => ch.CauHoiCons) // Lấy câu hỏi con
-                .ThenInclude(con => con.CauTraLois) // Lấy câu trả lời của câu hỏi con
+                .ThenInclude(ch => ch.CauHoiCons) 
+                .ThenInclude(con => con.CauTraLois)
         .Select(dt => new DeThiWithChiTietAndCauTraLoiDto
         {
             MaDeThi = dt.MaDeThi,
@@ -296,7 +296,7 @@ namespace BEQuestionBank.Core.Repositories
                             HoanVi = ctl.HoanVi,
                             LaDapAn = ctl.LaDapAn
                         }).ToList(),
-                        CauHoiCons = new List<CauHoiDto>() // Câu hỏi con không có câu hỏi con
+                        CauHoiCons = new List<CauHoiDto>() 
                     }).ToList()
                 }
             }).ToList()

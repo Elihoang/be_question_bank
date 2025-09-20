@@ -58,72 +58,80 @@ namespace BEQuestionBank.Core.Services
             return AddAsync(entity);
         }
 
-        public async Task<YeuCauRutTrich> AddAsync(YeuCauRutTrich entity)
+       public async Task<YeuCauRutTrich> AddAsync(YeuCauRutTrich entity)
+{
+    if (!await _repository.ExistsNguoiDungAsync(entity.MaNguoiDung))
+        throw new Exception($"Mã người dùng {entity.MaNguoiDung} không tồn tại.");
+
+    if (!await _repository.ExistsMonHocAsync(entity.MaMonHoc))
+        throw new Exception($"Mã môn học {entity.MaMonHoc} không tồn tại.");
+
+    if (!string.IsNullOrWhiteSpace(entity.MaTran))
+    {
+        try
         {
-            if (!await _repository.ExistsNguoiDungAsync(entity.MaNguoiDung))
-                throw new Exception($"Mã người dùng {entity.MaNguoiDung} không tồn tại.");
+            var request = JsonConvert.DeserializeObject<RutTrichRequest>(entity.MaTran);
+            if (request.TotalQuestions <= 0)
+                throw new Exception("TotalQuestions phải lớn hơn 0.");
 
-            if (!await _repository.ExistsMonHocAsync(entity.MaMonHoc))
-                throw new Exception($"Mã môn học {entity.MaMonHoc} không tồn tại.");
-
-            // Validate JSON trong MaTran
-            if (!string.IsNullOrWhiteSpace(entity.MaTran))
+            if (request.CloPerPart)
             {
-                try
+                if (!request.Parts.Any())
+                    throw new Exception("Parts không được rỗng khi CloPerPart = true.");
+
+                int total = request.Parts.Sum(p => p.NumQuestions);
+                if (total != request.TotalQuestions)
+                    throw new Exception($"Tổng NumQuestions từ parts ({total}) không khớp với TotalQuestions ({request.TotalQuestions}).");
+
+                foreach (var part in request.Parts)
                 {
-                    var request = JsonConvert.DeserializeObject<RutTrichRequest>(entity.MaTran);
-                    if (request.TotalQuestions <= 0)
-                        throw new Exception("TotalQuestions phải lớn hơn 0.");
+                    if (!await _repository.ExistsPhanAsync(part.MaPhan))
+                        throw new Exception($"Mã phần {part.MaPhan} không tồn tại.");
+                    if (part.NumQuestions <= 0)
+                        throw new Exception($"NumQuestions của phần {part.MaPhan} phải lớn hơn 0.");
 
-                    if (request.CloPerPart)
+                    int cloSum = part.Clos.Sum(c => c.Num);
+                    int groups = part.Groups;
+
+                    // Kiểm tra cơ bản: CLO + số nhóm <= tổng số câu hỏi yêu cầu
+                    if (cloSum + groups > part.NumQuestions)
+                        throw new Exception($"Tổng CLO num ({cloSum}) + Groups ({groups}) của phần {part.MaPhan} vượt quá NumQuestions ({part.NumQuestions}).");
+
+                    // Validate CLO enum
+                    foreach (var clo in part.Clos)
                     {
-                        if (!request.Parts.Any())
-                            throw new Exception("Parts không được rỗng khi cloPerPart = true.");
-
-                        int total = request.Parts.Sum(p => p.NumQuestions);
-                        if (total != request.TotalQuestions)
-                            throw new Exception($"Tổng numQuestions từ parts ({total}) không khớp với totalQuestions ({request.TotalQuestions}).");
-
-                        foreach (var part in request.Parts)
-                        {
-                            if (!await _repository.ExistsPhanAsync(part.MaPhan))
-                                throw new Exception($"Mã phần {part.MaPhan} không tồn tại.");
-                            if (part.NumQuestions <= 0)
-                                throw new Exception($"NumQuestions của phần {part.MaPhan} phải lớn hơn 0.");
-                            if (part.Clos.Sum(c => c.Num) != part.NumQuestions)
-                                throw new Exception($"Tổng CLO num của phần {part.MaPhan} không khớp với numQuestions.");
-                            foreach (var clo in part.Clos)
-                            {
-                                if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
-                                    throw new Exception($"CLO {clo.Clo} không hợp lệ.");
-                            }
-                        }
+                        if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
+                            throw new Exception($"CLO {clo.Clo} không hợp lệ.");
                     }
-                    else
-                    {
-                        if (!request.Clos.Any())
-                            throw new Exception("Clos không được rỗng khi cloPerPart = false.");
-                        if (request.Clos.Sum(c => c.Num) != request.TotalQuestions)
-                            throw new Exception("Tổng CLO num không khớp với totalQuestions.");
-                        foreach (var clo in request.Clos)
-                        {
-                            if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
-                                throw new Exception($"CLO {clo.Clo} không hợp lệ.");
-                        }
-                    }
-                }
-                catch (JsonException)
-                {
-                    throw new Exception("MaTran không phải JSON hợp lệ.");
                 }
             }
-
-            entity.MaYeuCau = Guid.NewGuid();
-            entity.NgayYeuCau = DateTime.UtcNow;
-            entity.DaXuLy = false;
-            await _repository.AddAsync(entity);
-            return entity;
+            else
+            {
+                if (!request.Clos.Any())
+                    throw new Exception("Clos không được rỗng khi CloPerPart = false.");
+                if (request.Clos.Sum(c => c.Num) != request.TotalQuestions)
+                    throw new Exception("Tổng CLO num không khớp với TotalQuestions.");
+                foreach (var clo in request.Clos)
+                {
+                    if (!Enum.IsDefined(typeof(EnumCLO), clo.Clo))
+                        throw new Exception($"CLO {clo.Clo} không hợp lệ.");
+                }
+            }
         }
+        catch (JsonException)
+        {
+            throw new Exception("MaTran không phải JSON hợp lệ.");
+        }
+    }
+
+    entity.MaYeuCau = Guid.NewGuid();
+    entity.NgayYeuCau = DateTime.UtcNow;
+    entity.DaXuLy = false;
+    await _repository.AddAsync(entity);
+    return entity;
+}
+
+
 
         public async Task UpdateAsync(YeuCauRutTrich entity)
         {

@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using BEQuestionBank.Shared.DTOs;
 
 namespace BEQuestionBank.API.Controllers
 {
@@ -262,13 +263,7 @@ namespace BEQuestionBank.API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("ManualSelect")]
-        [SwaggerOperation("Chọn câu hỏi thủ công cho yêu cầu rút trích")]
-        public async Task<IActionResult> ManualSelectCauHoiAsync(Guid maYeuCau, [FromBody] List<Guid> maCauHoiList)
-        {
-            var result = await _service.ManualSelectCauHoiAsync(maYeuCau, maCauHoiList);
-            return Ok(result);
-        }
+       
         [HttpPatch("{id}/ChangeStatus")]
         [SwaggerOperation("Thay đổi trạng thái duyệt của đề thi")]
         public async Task<IActionResult> ChangeStatusAsync(string id, [FromBody] bool daDuyet)
@@ -297,35 +292,6 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi thay đổi trạng thái duyệt.");
             }
         }
-        // [HttpGet("ExportWordTemplate/{maDeThi}")]
-        // [SwaggerOperation(Summary = "Xuất đề thi thành tệp Word với template")]
-        // public async Task<IActionResult> ExportWordTemplateAsync(string maDeThi)
-        // {
-        //     try
-        //     {
-        //         if (!Guid.TryParse(maDeThi, out var guidId))
-        //         {
-        //             _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
-        //             return BadRequest("ID đề thi không hợp lệ.");
-        //         }
-        //
-        //         // Gọi service để tạo và trả về tệp Word
-        //         var fileStream = await _service.ExportWordTemplateAsync(guidId);
-        //         if (fileStream == null)
-        //         {
-        //             _logger.LogWarning("Không thể tạo tệp Word cho đề thi với ID: {maDeThi}", maDeThi);
-        //             return NotFound($"Không thể tạo tệp Word cho đề thi với ID: {maDeThi}");
-        //         }
-        //
-        //         _logger.LogInformation("Xuất đề thi thành công với ID: {maDeThi}", maDeThi);
-        //         return File(fileStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"DeThi_{maDeThi}.docx");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Lỗi khi xuất đề thi thành tệp Word với ID: {maDeThi}", maDeThi);
-        //         return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
-        //     }
-        // }
         
         [HttpGet("{maDeThi}/CauTraLoi")]
         [SwaggerOperation("Lấy danh sách câu trả lời của câu hỏi trong đề thi")]
@@ -384,34 +350,6 @@ namespace BEQuestionBank.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi truy xuất dữ liệu.");
             }
         }
-    //     [HttpGet("ExportWordTemplate/{maDeThi}")]
-    //     [SwaggerOperation(Summary = "Xuất đề thi thành tệp Word")]
-    //     public async Task<IActionResult> ExportWordTemplateAsync(string maDeThi, [FromQuery] ExamTemplateParametersDto parameters = null)
-    //     {
-    //         try
-    //         {
-    //             if (!Guid.TryParse(maDeThi, out var guidId))
-    //             {
-    //                 _logger.LogWarning("ID đề thi không hợp lệ: {maDeThi}", maDeThi);
-    //                 return BadRequest("ID đề thi không hợp lệ.");
-    //             }
-    //
-    //             var fileStream = await _service.ExportWordTemplateAsync(guidId, parameters);
-    //             if (fileStream == null)
-    //             {
-    //                 _logger.LogWarning("Không thể tạo tệp Word cho đề thi với ID: {maDeThi}", maDeThi);
-    //                 return NotFound($"Không thể tạo tệp Word cho đề thi với ID: {maDeThi}");
-    //             }
-    //
-    //             _logger.LogInformation("Xuất đề thi thành Word thành công với ID: {maDeThi}", maDeThi);
-    //             return File(fileStream, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", $"DeThi_{maDeThi}.docx");
-    //         }
-    //         catch (Exception ex)
-    //         {
-    //             _logger.LogError(ex, "Lỗi khi xuất đề thi thành tệp Word với ID: {maDeThi}", maDeThi);
-    //             return StatusCode(StatusCodes.Status500InternalServerError, "Đã xảy ra lỗi khi xuất tệp Word.");
-    //         }
-    //     }
     [HttpPost("rut-trich")]
     [SwaggerOperation(Summary = "Rút trích đề thi từ yêu cầu")]
     public async Task<IActionResult> RutTrichDeThi([FromBody] Guid maYeuCau)
@@ -425,6 +363,47 @@ namespace BEQuestionBank.API.Controllers
         {
             Serilog.Log.Error(ex, "Lỗi khi rút trích đề thi.");
             return StatusCode(500, new { message = "Lỗi hệ thống khi rút trích đề thi", chi_tiet = ex.Message });
+        }
+    }
+    // ENDPOINT MỚI 1: Check trước rút trích (POST)
+    [HttpPost("CheckExtraction")]
+    [SwaggerOperation("Kiểm tra trước khi rút trích đề thi (simulate stats)")]
+    public async Task<IActionResult> CheckExtractionAsync([FromBody] ExtractionCheckDto dto)
+    {
+        try
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.MaTran))
+            {
+                _logger.LogWarning("Yêu cầu check không hợp lệ.");
+                return BadRequest("Yêu cầu không hợp lệ.");
+            }
+
+            var result = await _service.CheckExtractionAsync(dto.MaMonHoc, dto.MaTran);
+            _logger.LogInformation("Check extraction thành công cho MaMonHoc: {MaMonHoc}", dto.MaMonHoc);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi check extraction.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+        }
+    }
+
+    // ENDPOINT MỚI 2: Load stats/matrix cho môn học (GET)
+    [HttpGet("MonHocStats/{maMonHoc}")]
+    [SwaggerOperation("Lấy stats và matrix CLO cho môn học")]
+    public async Task<IActionResult> GetMonHocStatsAsync(Guid maMonHoc)
+    {
+        try
+        {
+            var stats = await _service.GetMonHocStatsAsync(maMonHoc);
+            _logger.LogInformation("Load stats thành công cho MaMonHoc: {MaMonHoc}", maMonHoc);
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi lấy stats môn học.");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
         }
     }
     }

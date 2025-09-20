@@ -134,19 +134,11 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<CauHoiDto>> GetByMaMonHocAsync(Guid maMonHoc)
+        public async Task<IEnumerable<CauHoi>> GetByMaMonHocAsync(Guid maMonHoc)
         {
             return await _context.CauHois
                 .Where(c => c.Phan.MaMonHoc == maMonHoc && c.XoaTam == false)
                 .AsNoTracking()
-                .Select(c => new CauHoiDto
-                {
-                    MaCauHoi = c.MaCauHoi,
-                    NoiDung = c.NoiDung,
-                    CapDo = c.CapDo,
-                    XoaTam = c.XoaTam,
-                    MaPhan = c.MaPhan,
-                })
                 .ToListAsync();
         }
 
@@ -531,14 +523,14 @@ namespace BEQuestionBank.Infrastructure.Repositories
                 .Where(c => c.Phan.MaMonHoc == maMonHoc && c.XoaTam == false)
                 .AsNoTracking()
                 .ToListAsync();
-
+        
             var units = new List<QuestionUnit>();
             var processed = new HashSet<Guid>();
-
+        
             foreach (var cauHoi in cauHois.Where(c => !c.MaCauHoiCha.HasValue))
             {
                 if (processed.Contains(cauHoi.MaCauHoi)) continue;
-
+        
                 var unit = new QuestionUnit
                 {
                     Id = cauHoi.MaCauHoi,
@@ -547,30 +539,90 @@ namespace BEQuestionBank.Infrastructure.Repositories
                     Questions = new List<CauHoi> { cauHoi },
                     CloCounts = new Dictionary<int, int>()
                 };
-
+        
                 if (unit.IsGroup)
                 {
                     unit.Questions.AddRange(cauHoi.CauHoiCons);
                     foreach (var con in cauHoi.CauHoiCons)
                         processed.Add(con.MaCauHoi);
                 }
-
+        
                     foreach (var q in unit.Questions)
                     {
                         if (q.CLO.HasValue)
                         {
-                            int clo = (int)q.CLO.Value; // cast enum -> int
+                            int clo = (int)q.CLO.Value; 
                             unit.CloCounts[clo] = unit.CloCounts.GetValueOrDefault(clo, 0) + 1;
                         }
                     }
-
+        
                 unit.TotalQuestions = unit.Questions.Count;
                 units.Add(unit);
                 processed.Add(cauHoi.MaCauHoi);
             }
-
+        
             return units;
         }
+        // public async Task<List<QuestionUnit>> GetQuestionU nitsByMonHocAsync(Guid maMonHoc)
+        // {
+        //     var cauHois = await _context.CauHois
+        //         .Include(c => c.Phan)
+        //         .Include(c => c.Files)
+        //         .Include(c => c.CauHoiCha)
+        //         .Include(c => c.CauHoiCons)
+        //         .ThenInclude(con => con.CauTraLois)
+        //         .Where(c => c.Phan.MaMonHoc == maMonHoc && c.XoaTam == false)
+        //         .AsNoTracking()
+        //         .ToListAsync();
+        //
+        //     var units = new List<QuestionUnit>();
+        //     var processed = new HashSet<Guid>();
+        //
+        //     foreach (var cauHoi in cauHois.Where(c => !c.MaCauHoiCha.HasValue))
+        //     {
+        //         if (processed.Contains(cauHoi.MaCauHoi)) continue;
+        //
+        //         var unit = new QuestionUnit
+        //         {
+        //             Id = cauHoi.MaCauHoi,
+        //             MaPhan = cauHoi.MaPhan,
+        //             IsGroup = cauHoi.SoCauHoiCon > 0,
+        //             Questions = new List<CauHoi> { cauHoi },
+        //             CloCounts = new Dictionary<int, int>()
+        //         };
+        //
+        //         if (unit.IsGroup)
+        //         {
+        //             unit.Questions.AddRange(cauHoi.CauHoiCons);
+        //
+        //             foreach (var con in cauHoi.CauHoiCons)
+        //                 processed.Add(con.MaCauHoi);
+        //
+        //             // ✅ chỉ tính câu hỏi con
+        //             unit.TotalQuestions = cauHoi.CauHoiCons.Count;
+        //         }
+        //         else
+        //         {
+        //             // ✅ câu hỏi đơn thì tính 1
+        //             unit.TotalQuestions = 1;
+        //         }
+        //
+        //         // CLO tính cả cha + con, vì cha cũng có thể có CLO riêng
+        //         foreach (var q in unit.Questions)
+        //         {
+        //             if (q.CLO.HasValue)
+        //             {
+        //                 int clo = (int)q.CLO.Value;
+        //                 unit.CloCounts[clo] = unit.CloCounts.GetValueOrDefault(clo, 0) + 1;
+        //             }
+        //         }
+        //
+        //         units.Add(unit);
+        //         processed.Add(cauHoi.MaCauHoi);
+        //     }
+        //
+        //     return units;
+        // }
 
     }
 }

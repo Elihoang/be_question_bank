@@ -245,9 +245,10 @@ namespace BEQuestionBank.API.Controllers
                 var phans = await _service.GetByMaMonHocAsync(guidMaMonHoc);
                 if (phans == null || !phans.Any())
                 {
-                    _logger.LogWarning("Không tìm thấy phân nào với mã môn học: {MaMonHoc}", maMonHoc);
-                    return StatusCode(StatusCodes.Status404NotFound, $"Không tìm thấy phân nào với mã môn học: {maMonHoc}");
+                    _logger.LogInformation("Không có phân nào với mã môn học: {MaMonHoc}", maMonHoc);
+                    return Ok(new { message = $"Không có phân nào với mã môn học: {maMonHoc}" });
                 }
+
 
                 _logger.LogInformation("Lấy danh sách phân thành công với mã môn học: {MaMonHoc}", maMonHoc);
                 return StatusCode(StatusCodes.Status200OK, phans);

@@ -240,7 +240,7 @@ namespace BEQuestionBank.API.Controllers
                     {
                         deThi = await _deThiService.RutTrichDeThiFromYeuCauAsync(result.MaYeuCau);
                         // Cập nhật trạng thái DaXuLy và NgayXuLy nếu rút trích thành công
-                        result.DaXuLy = true;
+                        result.DaXuLy = false;
                         result.NgayXuLy = DateTime.UtcNow;
                         await _service.UpdateAsync(result);
                     }
